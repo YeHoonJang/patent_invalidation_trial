@@ -9,7 +9,8 @@ playground/
 data/
 .idea/
 log/
-
+.env
+config.json
 .DS_Store
 
 # C extensions
