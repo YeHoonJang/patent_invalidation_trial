@@ -1,0 +1,12 @@
+{
+    "path": {
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
+        "input_dir": "data/ptab_21c_v2/cover",
+        "output_dir": "data/ocr/upstage_version",
+        "failed_log": "log/failed.txt"
+    },
+    "api_url": "https://api.upstage.ai/v1/document-digitization",
+    "concurrent_workers": 3,
+    "max_retries": 5
+}
+    
