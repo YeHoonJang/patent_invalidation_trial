@@ -1,0 +1,103 @@
+{
+    "path": {
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
+        "common_config": "config/common.json",
+        "input_dir": "data/json/opinion_split/(temp)llm_input",
+        "output_dir": "data/json/opinion_split/(temp)llm_output"
+    },    
+    "prompt": {
+        "prompt_dir": "data/prompt/opinion_split",
+        "opinion_only": "opinion_only.txt",
+        "opinion_only_v2": "opinion_only_v2.txt",
+        "opinion_supplement": "opinion_supplement.txt"
+    },
+    "gpt": {
+        "llm_params":{
+            "model": "gpt-4o",
+            "temperature": 0.0,
+            "functions":[
+                {
+                    "name": "classify_by_speaker",
+                    "description": "classify arguments in PTAB document by speaker",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "appellant_arguments": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "examiner_findings": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "ptab_opinion": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["appellant_arguments", "examiner_findings", "ptab_opinion"]
+                    } 
+                }
+            ],
+            "function_call": {"name": "classify_by_speaker"}
+        }
+    },
+    "claude": {
+        "llm_params":{
+            "model": "claude-sonnet-4-20250514",
+            "temperature": 0.0,
+            "max_tokens": 32000,
+            "timeout": 3600,
+            "functions": {
+                "name": "classify_by_speaker",
+                "description": "classify arguments in PTAB document by speaker",
+                "parameters": {
+                "type": "object",
+                "properties": {
+                    "appellant_arguments": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                    },
+                    "examiner_findings": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                    },
+                    "ptab_opinion": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                    }
+                },
+                "required": ["appellant_arguments", "examiner_findings", "ptab_opinion"]
+                } 
+            }
+        }
+    },
+    "gemini": {
+        "llm_params":{
+            "model": "gemini-2.5-pro-preview-06-05",
+            "temperature": 0.0,
+            "functions":{
+                "type": "object",
+                "properties": {
+                    "appellant_arguments": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "examiner_findings": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "ptab_opinion": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": [
+                    "appellant_arguments",
+                    "examiner_findings",
+                    "ptab_opinion"
+                ]
+            }
+        }
+    }
+}
