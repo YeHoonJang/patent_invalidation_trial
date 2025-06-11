@@ -6,7 +6,7 @@ from .gemini_client import GeminiClient
 def get_llm_client(model_name, api_key, **kwargs):
     name = model_name.lower()
 
-    if name == "gpt":
+    if name == "gpt" or "gpt-o":
         return GPTClient(api_key, **kwargs)
     elif name == "claude":
         return ClaudeClient(api_key, **kwargs)

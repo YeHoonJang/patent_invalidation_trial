@@ -42,6 +42,37 @@
             "function_call": {"name": "classify_by_speaker"}
         }
     },
+    "gpt-o": {
+        "llm_params":{
+            "model": "o3-2025-04-16",
+            "temperature": 0,
+            "functions":[
+                {
+                    "name": "classify_by_speaker",
+                    "description": "classify arguments in PTAB document by speaker",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "appellant_arguments": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "examiner_findings": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "ptab_opinion": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["appellant_arguments", "examiner_findings", "ptab_opinion"]
+                    } 
+                }
+            ],
+            "function_call": {"name": "classify_by_speaker"}
+        }
+    },
     "claude": {
         "llm_params":{
             "model": "claude-sonnet-4-20250514",
