@@ -3,6 +3,8 @@ import random
 from openai import OpenAI
 from openai import RateLimitError
 
+import pdb
+
 
 class GPTClient:
     def __init__(self, api_key, model, temperature, functions, function_call):
@@ -17,18 +19,32 @@ class GPTClient:
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                response = self.client.chat.completions.create(
-                    model = self.model,
-                    messages= [
-                        {"role": "system", "content": "You are a legal assistant who classifies PTAB legal text by speaker."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=self.temperature,
-                    functions=self.functions,
-                    function_call=self.function_call
-                )
+                if self.model.startswith("gpt"):
+                    response = self.client.chat.completions.create(
+                        model = self.model,
+                        messages= [
+                            {"role": "system", "content": "You are a legal assistant who classifies PTAB legal text by speaker."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=self.temperature,
+                        functions=self.functions,
+                        function_call=self.function_call
+                    )
 
-                return response
+                    return response
+                
+                elif self.model.startswith("o"):
+                    response = self.client.chat.completions.create(
+                        model = self.model,
+                        messages = [
+                            {"role": "system", "content": "You are a legal assistant who classifies PTAB legal text by speaker."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        functions=self.functions,
+                        function_call=self.function_call
+                    )
+
+                    return response
             
             except RateLimitError as e:
                 wait = (2 ** attempt) + random.random()

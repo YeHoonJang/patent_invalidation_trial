@@ -41,21 +41,18 @@ def main(args):
     model = args.model.lower()
     if model == "gpt":
         api_key = os.getenv("OPENAI_API_KEY")
-        llm_params = config[model]["llm_params"]
-        client = get_llm_client(model, api_key, **llm_params)
+    elif model == "gpt-o":
+        api_key = os.getenv("OPENAI_API_KEY")
     elif model == "claude":
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        llm_params = config[model]["llm_params"]
-        client = get_llm_client(model, api_key, **llm_params)
     elif model == "gemini":
         api_key = os.getenv("GOOGLE_API_KEY")
-        llm_params = config[model]["llm_params"]
-        client = get_llm_client(model, api_key, **llm_params)
     else:
         raise ValueError(f"Unsupported model: {model}")
     
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
+    
     
     input_dir = root_path / config["path"]["input_dir"]
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
@@ -72,9 +69,12 @@ def main(args):
             analysis=analysis_text.strip()
         )
 
+        llm_params = config[model]["llm_params"]
+        client = get_llm_client(model, api_key, **llm_params)
+
         response = client.split_opinion(full_prompt)
 
-        if model == "gpt":
+        if model == "gpt" or model == "gpt-o":
             result_json = response.choices[0].message.function_call.arguments
         elif model == "claude":
             result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/opinion_split.json", help="Path of configuration file (e.g., opinion_split.json)")
-    parser.add_argument("--model", choices=["gpt", "claude", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
+    parser.add_argument("--model", choices=["gpt", "gpt-o", "claude", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
