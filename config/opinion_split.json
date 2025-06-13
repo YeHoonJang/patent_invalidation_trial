@@ -2,8 +2,8 @@
     "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/(temp)llm_input",
-        "output_dir": "data/json/opinion_split/(temp)llm_output"
+        "input_dir": "data/json/opinion_split/input_sample",
+        "output_dir": "data/json/opinion_split/output_sample"
     },    
     "prompt": {
         "prompt_dir": "data/prompt/opinion_split",

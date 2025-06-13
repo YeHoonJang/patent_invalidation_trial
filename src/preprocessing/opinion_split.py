@@ -61,8 +61,8 @@ def main(args):
     files = sorted(input_dir.glob("*.json"))
     for path in tqdm(files, desc="Splitting Opinion ..."):
         data = json.loads(path.read_text(encoding="utf-8"))
-        statement_of_case_text = data["contents"]["STATEMENT OF THE CASE"]["text"]
-        analysis_text = data["contents"]["ANALYSIS"]["text"]
+        statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"]
+        analysis_text = data["main_body_text"]["ANALYSIS"]["text"]
 
         full_prompt = base_prompt.format(
             statement_of_the_case=statement_of_case_text.strip(),
