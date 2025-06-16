@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import glob
 import json
 import os
@@ -12,12 +13,47 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import pandas as pd
 from tqdm import tqdm
+from tqdm.asyncio import tqdm_asyncio
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
+
+
+async def process_file(path, base_prompt, client, output_dir, model):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
+    analysis_text = data["main_body_text"]["ANALYSIS"]["text"].strip()
+
+    full_prompt = base_prompt.format(
+        statement_of_the_case=statement_of_case_text,
+        analysis=analysis_text
+        )
+    
+    mod = await client.client.moderations.create(input=full_prompt)
+    if mod.results[0].flagged:
+        print(f"[BLOCKED] {path.name}")
+        (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
+        return
+    
+    response = await client.split_opinion(full_prompt)
+
+    if model == "gpt" or model == "gpt-o":
+        result_json = response.choices[0].message.function_call.arguments
+    elif model == "claude":
+        result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
+    elif model == "gemini":
+        result_json = response.text
+
+    try:
+        result = json.loads(result_json)
+    except Exception:
+        print(f"JSON Load Failed ...: {os.path.basename(path)}")
+
+    output_path = output_dir/f"{model}_{os.path.basename(path)}"
+    output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
 
 
 def main(args):
@@ -58,39 +94,18 @@ def main(args):
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    files = sorted(input_dir.glob("*.json"))
-    for path in tqdm(files, desc="Splitting Opinion ..."):
-        data = json.loads(path.read_text(encoding="utf-8"))
-        statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"]
-        analysis_text = data["main_body_text"]["ANALYSIS"]["text"]
+    llm_params = config[model]["llm_params"]
+    client = get_llm_client(model, api_key, **llm_params)
+    
+    all_files = sorted(input_dir.glob("*.json"))
+    files = [p for p in all_files if not (output_dir / f"{model}_{p.name}").exists()]
+    sem = asyncio.Semaphore(config["async"]["concurrency"])
+    
+    async def sem_task(path):
+        async with sem:
+            await process_file(path, base_prompt, client, output_dir, model)
 
-        full_prompt = base_prompt.format(
-            statement_of_the_case=statement_of_case_text.strip(),
-            analysis=analysis_text.strip()
-        )
-
-        llm_params = config[model]["llm_params"]
-        client = get_llm_client(model, api_key, **llm_params)
-
-        response = client.split_opinion(full_prompt)
-
-        if model == "gpt" or model == "gpt-o":
-            result_json = response.choices[0].message.function_call.arguments
-        elif model == "claude":
-            result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
-        elif model == "gemini":
-            result_json = response.text
-
-        try:
-            result = json.loads(result_json)
-        except:
-            print(f"JSON Load Failed ...: {os.path.basename(path)}")
-
-        output = json.dumps(result, indent=2)
-
-        with open(f"{output_dir}/{model}_{os.path.basename(path)}", "w", encoding="utf-8") as f:
-            f.write(output)
-
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Splitting Opinion ..."))
 
 
 if __name__ == "__main__":
