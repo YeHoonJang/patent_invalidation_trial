@@ -20,9 +20,9 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from utils.config_utils import load_config
 
-def load_valid_identifier(valid_path):
+def load_valid_identifier(valid_identifier_dir) -> list:
     valid_identifier = []
-    with open(valid_path) as f:
+    with open(valid_identifier_dir) as f:
         for i, line in enumerate(f, start=1):
             try:
                 valid_identifier.append(json.loads(line))
@@ -30,11 +30,11 @@ def load_valid_identifier(valid_path):
                 print(f"[오류] {i}번째 {line} 파일 파싱 실패: {e}")
     return valid_identifier
 
-def split_by_before_blocks(pages):
+def split_by_before_blocks(pages: dict) -> dict:
     def fuzzy(word):
         return r'\s*'.join(list(word)) + r'\s*'
 
-    pattern = re.compile(
+    ptab_intro_pattern = re.compile(
         r'BEFORE\s*(?:THE\s*)?'
         r'(?:' +
             fuzzy('PATENT') + r'(?:AND\s*)?' +
@@ -46,58 +46,63 @@ def split_by_before_blocks(pages):
         re.IGNORECASE
     )
 
-    filtered_data = {}
-    status = False
-    page_keys = sorted(pages.keys(), key=int)
-
-    prev_key = [
-        i for i, key in enumerate(page_keys)
-        if re.search(pattern, pages[key][:500])
+    page_keys_sorted = sorted(pages.keys(), key=int)
+    ptab_intro_page_idxs = [
+        i for i, key in enumerate(page_keys_sorted)
+        if re.search(ptab_intro_pattern, pages[key][:500])
     ]
 
-    if len(prev_key) > 1:
-        # If there are two or more info pages
-        filtered_data = None
-    elif len(prev_key) == 1:
-        status = True
-        for x, key in enumerate(pages):
-            if prev_key[0] <= x: # drop an info page
-                filtered_data[key] = pages[key]
-    else:
-        filtered_data = None
+    if len(ptab_intro_page_idxs) == 1:
+        intro_idx = ptab_intro_page_idxs[0]
+        return {
+            key: pages[key]
+            for i, key in enumerate(page_keys_sorted)
+            if i >= intro_idx  # keep pages from PTAB intro
+        }
+    return None # if no intro page is found or multiple are found
 
-    return status, filtered_data, prev_key
+def preprocess(pages: dict) -> dict:
+    def find_common_headers(pages: dict, header_line_limit: int=5) -> set:
+        # key: line (potential header), value: list of page numbers where it appears
+        line_to_pages = {}
 
-def drop_redundant_header(data, num_lines=5):
-    def find_common_headers(data, num_lines):
-        buffer_dict = {}
-        # key : header, values : 등장한 pages
+        for page_idx, text in pages.items():
+            top_lines = text.strip().split('\n')[:header_line_limit]
+            for line_idx, line in enumerate(top_lines):
+                line_to_pages.setdefault((line_idx, line), []).append(page_idx)
 
-        for page_num, text in data.items():
-            buffer_texts = text.strip().split('\n')[:num_lines]
-            for i in buffer_texts:
-                buffer_dict.setdefault(i, []).append(page_num)
-        return {line for line, pages in buffer_dict.items() if len(pages) > 1}
+       # Keep only (idx, line) pairs that appear in 2 or more pages
+        common_headers = {
+            (i, l) for (i, l), pages_set in line_to_pages.items()
+            if len(pages_set) > 1
+        }
+        return common_headers
 
-    result = {}
-    common_headers = find_common_headers(data, num_lines)
-
-    for page_num, text in data.items():
-        lines = text.strip().split('\n')
-        cleaned_head = [
-            line for line in lines[:num_lines] if line not in common_headers
-        ]
-        cleaned_tail = lines[num_lines:]
-        result[page_num] = '\n'.join(cleaned_head + cleaned_tail)
-
-    return result
-
-def drop_redundant_page_no(data):
+    common_headers = find_common_headers(pages)
     cleaned_pages = {}
-    for key, text in data.items():
-        # 끝에 "\n숫자"가 붙어있다면 제거
-        cleaned_text = re.sub(r'\n\d{1,3}$', '', text.strip())
-        cleaned_pages[key] = cleaned_text
+
+    for page_num, page_text in pages.items():
+        lines = page_text.strip().split('\n')
+
+        # Remove common header lines from the top of each page
+        cleaned_lines = [
+            line for idx, line in enumerate(lines)
+            if (idx, line) not in common_headers
+        ]
+
+        text = '\n'.join(cleaned_lines)
+
+        # Remove a trailing page number (e.g., "\n23") at the end of the text
+        text = re.sub(r'\n\d{1,3}$', '', text)
+
+        # Remove Korean characters to keep only English
+        text = re.sub(r'[가-힣]', '', text)
+
+        # Remove \n
+        cleaned_text = text.replace('\n', ' ')
+
+        cleaned_pages[page_num] = cleaned_text
+
     return cleaned_pages
 
 def main(args):
@@ -111,50 +116,47 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     ### Load valid identifier files
-    valid_identifier = load_valid_identifier(valid_identifier_dir)
-    documentName_set = {os.path.splitext(item["documentName"])[0] for item in valid_identifier}
+    valid_identifiers = load_valid_identifier(valid_identifier_dir)
+    document_name_set = {os.path.splitext(item["documentName"])[0] for item in valid_identifiers}
 
-    #### drop duplicates
-    seen = {}
+    #### Drop duplicates, only keep the first occurrence
+    unique_file_map = {}
     for fname in os.listdir(input_dir):
         base_name = os.path.splitext(fname.split("_ocr_result")[0])[0]
-        if base_name in documentName_set and base_name not in seen:
-            seen[base_name] = fname  # save a first file
-    print(f"Total data count without duplicates : {len(seen)}")
+        if base_name in document_name_set and base_name not in unique_file_map:
+            unique_file_map[base_name] = fname  # save the first occurremce
+
+    print(f"==== Total data count without duplicates: {len(unique_file_map)}")
 
     batch_size = 100
-    err = []
-    files = list(seen.values())
-
+    files = list(unique_file_map.values())
+    korean_count = []
+    ### Preprocess --------
     for i in tqdm(range(0, len(files), batch_size), desc="Processing PTAB"):
         batch_files = files[i:i + batch_size]
         for fname in batch_files:
-            base_name = os.path.splitext(fname.split("_ocr_result")[0])[0]
-            file_path = os.path.join(input_dir, fname)
-            output_path = os.path.join(output_dir, f"{base_name}.json")
+            file_id = os.path.splitext(fname.split("_ocr_result")[0])[0]
+            file_path = input_dir / fname
+            output_path = output_dir / f"{file_id}.json"
 
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+
             pages = data.get("all_text_by_page", "")
 
-            ### Drop First Page (Patent & Ptab decision info page)
-            drop_page_status, filtered_data, prev_key = split_by_before_blocks(pages)
-
-            ### 3 Drop Header & Page number
-            if drop_page_status:
-                filtered_data = drop_redundant_header(filtered_data)
-                filtered_data = drop_redundant_page_no(filtered_data)
-                with open(output_path, "w", encoding="utf-8") as f:
-                            json.dump(filtered_data, f, ensure_ascii=False, indent=2)
+            ### Drop PTAB introduction page (Patent & Ptab decision info page)
+            filtered_pages = split_by_before_blocks(pages)
+            if filtered_pages is None:
                 continue
-            else:
-                err.append({
-                    "filename":base_name,
-                    "prev_key" : prev_key
-                })
 
-    print(f"처리된 Data 개수 : {len(os.listdir(output_dir))}")
-    pd.DataFrame(err).to_csv("dropped_ocr_files.csv", index=False)
+            ### Preprocess
+            preprocessed_data = preprocess(filtered_pages)
+
+            ## Save
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(preprocessed_data, f, ensure_ascii=False, indent=2)
+
+    print(f"==== Total preprocessed data count : {len(os.listdir(output_dir))}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
