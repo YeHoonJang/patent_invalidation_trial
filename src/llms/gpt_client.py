@@ -4,6 +4,9 @@ import random
 from openai import AsyncOpenAI, OpenAI
 from openai import RateLimitError
 
+from jsonschema import validate, ValidationError
+import json
+
 import pdb
 
 
@@ -44,7 +47,39 @@ class GPTClient:
         while True:
             try:
                 return await self._call(prompt)
-                        
+
+            except RateLimitError as e:
+                retry_count += 1
+                if retry_count >= 5:
+                    wait = 3600
+                    retry_count = 0
+                    print("f[RateLimit] Retries exceeded 5 times. Please wait an hour.")
+                else:
+                    wait = (2 ** (retry_count - 1)) + random.random()
+                    print(f"[WARN] {type(e).__name__}, Retry after {wait:.1f}s ({retry_count}/5)...")
+                    await asyncio.sleep(wait)
+
+    def validate_with_schema(self, result: dict):
+        target_name = self.function_call["name"]
+        try:
+            schema = next(fn["parameters"] for fn in self.functions if fn["name"] == target_name)
+        except StopIteration:
+            raise ValueError(f"Function '{target_name}' not found in functions list")
+
+        ### 유효하지 않는 경우, ValidationError 발생
+        validate(instance=result, schema=schema)
+        return result
+
+    async def generate_valid_json(self, prompt: str) -> dict:
+        retry_count = 0
+        while True:
+            try:
+                response = await self._call(prompt)
+                result = response.choices[0].message.function_call.arguments
+                result_json = json.loads(result)
+                valid_result = self.validate_with_schema(result_json)
+                return valid_result
+
             except RateLimitError as e:
                 retry_count += 1
                 if retry_count >= 5:
