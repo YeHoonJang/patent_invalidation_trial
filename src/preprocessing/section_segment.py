@@ -28,21 +28,10 @@ async def process_file(path, base_prompt, client, output_dir, model):
     data = json.loads(path.read_text(encoding="utf-8"))
     full_prompt = base_prompt.format(data=data)
 
-    response = await client.split_opinion(full_prompt)
-
-    if model == "gpt" or model == "gpt-o":
-        result_json = response.choices[0].message.function_call.arguments
-    elif model == "gemini":
-        result_json = response.text
-
-    try:
-        result = json.loads(result_json)
-    except Exception:
-        print(f"JSON Load Failed ...: {path.name}")
+    result_json = await client.generate_valid_json(full_prompt)
 
     output_path = output_dir/f"{model}_{path.name}"
-    output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
-
+    output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def main(args):
     ### Init
@@ -61,12 +50,8 @@ def main(args):
     load_dotenv(PROJECT_ROOT / "config" / ".env")
 
     model = args.model.lower()
-    if model == "gpt":
+    if (model == "gpt") or (model == "gpt-o"):
         api_key = os.getenv("OPENAI_API_KEY")
-    elif model == "gpt-o":
-        api_key = os.getenv("OPENAI_API_KEY")
-    elif model == "gemini":
-        api_key = os.getenv("GOOGLE_API_KEY")
     else:
         raise ValueError(f"Unsupported model: {model}")
 
@@ -97,7 +82,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/section_segment.json", help="Path of configuration file (e.g., section_segment.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-o", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
+    parser.add_argument("--model", choices=["gpt", "gpt-o"], required=False, default="gpt", help="LLM Model for spliting opinion")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
