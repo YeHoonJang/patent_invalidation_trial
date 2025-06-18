@@ -24,6 +24,7 @@ from llms.llm_client import get_llm_client
 
 async def process_file(path, base_prompt, client, output_dir, model):
     data = json.loads(path.read_text(encoding="utf-8"))
+    # pdb.set_trace()
     statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
     analysis_text = data["main_body_text"]["ANALYSIS"]["text"].strip()
 
@@ -38,19 +39,23 @@ async def process_file(path, base_prompt, client, output_dir, model):
         (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
         return
     
-    response = await client.split_opinion(full_prompt)
+    response = await client.generate_valid_json(full_prompt)
 
     if model == "gpt" or model == "gpt-o":
-        result_json = response.choices[0].message.function_call.arguments
+        result = response
     elif model == "claude":
         result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
+        try:
+            result = json.loads(result_json)
+        except Exception:
+            print(f"JSON Load Failed ...: {os.path.basename(path)}")
     elif model == "gemini":
         result_json = response.text
+        try:
+            result = json.loads(result_json)
+        except Exception:
+            print(f"JSON Load Failed ...: {os.path.basename(path)}")
 
-    try:
-        result = json.loads(result_json)
-    except Exception:
-        print(f"JSON Load Failed ...: {os.path.basename(path)}")
 
     output_path = output_dir/f"{model}_{os.path.basename(path)}"
     output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
