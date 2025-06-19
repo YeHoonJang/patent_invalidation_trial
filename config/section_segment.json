@@ -6,6 +6,7 @@
     },
     "prompt": {
         "prompt_dir": "data/prompt",
+        "system": "section_segment_system.txt",
         "section_segmentation": "section_segmentation.txt"
     },
     "async": {

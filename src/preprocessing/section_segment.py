@@ -24,11 +24,16 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
 
 
-async def process_file(path, base_prompt, client, output_dir, model):
+async def process_file(path, system_prompt, base_prompt, client, output_dir, model):
     data = json.loads(path.read_text(encoding="utf-8"))
     full_prompt = base_prompt.format(data=data)
 
-    result_json = await client.generate_valid_json(full_prompt)
+    prompt = {
+        "system": system_prompt,
+        "user": full_prompt
+    }
+
+    result_json = await client.generate_valid_json(prompt)
 
     output_path = output_dir/f"{path.name}"
     output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
@@ -39,13 +44,15 @@ def main(args):
     root_path = Path(config["path"]["root_path"])
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
-    prompt_file_name = config["prompt"][args.prompt]
+    system_prompt_file = config["prompt"]["system"]
+    user_prompt_file = config["prompt"][args.prompt]
 
     prompt_dir = root_path / prompt_dir_name
-    prompt_path = prompt_dir / prompt_file_name
+    system_prompt_path = prompt_dir / system_prompt_file
+    user_prompt_path = prompt_dir / user_prompt_file
 
-    with open(prompt_path, "r") as f:
-        base_prompt = f.read()
+    system_prompt = system_prompt_path.read_text(encoding="utf-8")
+    base_prompt = user_prompt_path.read_text(encoding="utf-8")
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
 
@@ -73,9 +80,9 @@ def main(args):
 
     async def sem_task(path):
         async with sem:
-            await process_file(path, base_prompt, client, output_dir, model)
+            await process_file(path, system_prompt, base_prompt, client, output_dir, model)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Splitting Opinion ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Segment Sections ..."))
 
 
 if __name__ == "__main__":
