@@ -30,7 +30,7 @@ async def process_file(path, base_prompt, client, output_dir, model):
 
     result_json = await client.generate_valid_json(full_prompt)
 
-    output_path = output_dir/f"{model}_{path.name}"
+    output_path = output_dir/f"{path.name}"
     output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def main(args):
