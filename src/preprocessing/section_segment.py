@@ -51,8 +51,8 @@ def main(args):
     system_prompt_path = prompt_dir / system_prompt_file
     user_prompt_path = prompt_dir / user_prompt_file
 
-    system_prompt = system_prompt_path.read_text(encoding="utf-8").strip()
-    base_prompt = user_prompt_path.read_text(encoding="utf-8").strip()
+    system_prompt = system_prompt_path.read_text(encoding="utf-8")
+    base_prompt = user_prompt_path.read_text(encoding="utf-8")
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
 
