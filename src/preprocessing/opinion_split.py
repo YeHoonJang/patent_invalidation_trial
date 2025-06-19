@@ -22,7 +22,7 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
 
 
-async def process_file(path, system_prompt, base_prompt, client, output_dir, model):
+async def split_opinion(path, system_prompt, base_prompt, client, output_dir, model):
     data = json.loads(path.read_text(encoding="utf-8"))
     # pdb.set_trace()
     statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
@@ -118,7 +118,7 @@ def main(args):
     
     async def sem_task(path):
         async with sem:
-            await process_file(path, system_prompt, base_prompt, client, output_dir, model)
+            await split_opinion(path, system_prompt, base_prompt, client, output_dir, model)
 
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Splitting Opinion ..."))
 
