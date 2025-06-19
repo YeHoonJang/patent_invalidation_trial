@@ -22,7 +22,7 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
 
 
-async def process_file(path, base_prompt, client, output_dir, model):
+async def process_file(path, system_prompt, base_prompt, client, output_dir, model):
     data = json.loads(path.read_text(encoding="utf-8"))
     # pdb.set_trace()
     statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
@@ -33,13 +33,17 @@ async def process_file(path, base_prompt, client, output_dir, model):
         analysis=analysis_text
         )
     
+    prompt = {
+        "system": system_prompt,
+        "user": full_prompt}
+    
     mod = await client.client.moderations.create(input=full_prompt)
     if mod.results[0].flagged:
         print(f"[BLOCKED] {path.name}")
         (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
         return
     
-    response = await client.generate_valid_json(full_prompt)
+    response = await client.generate_valid_json(prompt)
 
     if model == "gpt" or model == "gpt-o":
         result = response
@@ -67,12 +71,18 @@ def main(args):
     
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
-    prompt_file_name = config["prompt"][args.prompt]
+    system_prmopt_file = config["prompt"]["system"]
+    user_prompt_file = config["prompt"][args.prompt]
 
     prompt_dir = root_path / prompt_dir_name
-    prompt_path = prompt_dir / prompt_file_name
+    system_prmopt_path = prompt_dir / system_prmopt_file
+    user_prompt_path = prompt_dir / user_prompt_file
 
-    with open(prompt_path, "r") as f:
+
+    with open(system_prmopt_path, "r") as f:
+        system_prompt = f.read()
+
+    with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
 
 
@@ -108,7 +118,7 @@ def main(args):
     
     async def sem_task(path):
         async with sem:
-            await process_file(path, base_prompt, client, output_dir, model)
+            await process_file(path, system_prompt, base_prompt, client, output_dir, model)
 
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Splitting Opinion ..."))
 

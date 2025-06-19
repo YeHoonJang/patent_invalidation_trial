@@ -24,8 +24,8 @@ class GPTClient:
             return await self.client.chat.completions.create(
                 model = self.model,
                 messages= [
-                    {"role": "system", "content": "You are a legal assistant who classifies PTAB legal text by speaker."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": prompt["system"]},
+                    {"role": "user", "content": prompt["user"]}
                 ],
                 temperature=self.temperature,
                 functions=self.functions,
@@ -35,29 +35,13 @@ class GPTClient:
             return await self.client.chat.completions.create(
                 model = self.model,
                 messages = [
-                    {"role": "system", "content": "You are a legal assistant who classifies PTAB legal text by speaker."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": prompt["system"]},
+                    {"role": "user", "content": prompt["user"]}
                 ],
                 functions=self.functions,
                 function_call=self.function_call
                 )
 
-    async def split_opinion(self, prompt):
-        retry_count = 0
-        while True:
-            try:
-                return await self._call(prompt)
-
-            except RateLimitError as e:
-                retry_count += 1
-                if retry_count >= 5:
-                    wait = 3600
-                    retry_count = 0
-                    print("f[RateLimit] Retries exceeded 5 times. Please wait an hour.")
-                else:
-                    wait = (2 ** (retry_count - 1)) + random.random()
-                    print(f"[WARN] {type(e).__name__}, Retry after {wait:.1f}s ({retry_count}/5)...")
-                    await asyncio.sleep(wait)
 
     def validate_with_schema(self, result: dict):
         target_name = self.function_call["name"]
@@ -69,6 +53,7 @@ class GPTClient:
         ### 유효하지 않는 경우, ValidationError 발생
         validate(instance=result, schema=schema)
         return result
+
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0

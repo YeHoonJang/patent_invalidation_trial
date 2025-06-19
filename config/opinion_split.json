@@ -8,6 +8,7 @@
     },    
     "prompt": {
         "prompt_dir": "data/prompt/opinion_split",
+        "system": "system.txt",
         "opinion_only": "opinion_only.txt",
         "opinion_only_v2": "opinion_only_v2.txt",
         "opinion_supplement": "opinion_supplement.txt"
