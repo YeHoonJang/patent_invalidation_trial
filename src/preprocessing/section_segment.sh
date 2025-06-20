@@ -1,0 +1,1 @@
+python src/preprocessing/section_segment.py --config=/home/chaewon/workspace/STUDY/PTAB/config/section_segment.json --model=gpt-o --prompt=section_segmentation
