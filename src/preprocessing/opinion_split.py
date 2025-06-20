@@ -75,11 +75,11 @@ def main(args):
     user_prompt_file = config["prompt"][args.prompt]
 
     prompt_dir = root_path / prompt_dir_name
-    system_prmopt_path = prompt_dir / system_prompt_file
+    system_prompt_path = prompt_dir / system_prompt_file
     user_prompt_path = prompt_dir / user_prompt_file
 
 
-    with open(system_prmopt_path, "r") as f:
+    with open(system_prompt_path, "r") as f:
         system_prompt = f.read()
 
     with open(user_prompt_path, "r") as f:
