@@ -71,11 +71,11 @@ def main(args):
     
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
-    system_prmopt_file = config["prompt"]["system"]
+    system_prompt_file = config["prompt"]["system"]
     user_prompt_file = config["prompt"][args.prompt]
 
     prompt_dir = root_path / prompt_dir_name
-    system_prmopt_path = prompt_dir / system_prmopt_file
+    system_prmopt_path = prompt_dir / system_prompt_file
     user_prompt_path = prompt_dir / user_prompt_file
 
 
