@@ -35,8 +35,10 @@ async def process_file(path, system_prompt, base_prompt, client, output_dir, mod
 
     result_json = await client.generate_valid_json(prompt)
 
-    output_path = output_dir/f"{path.name}"
-    output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
+    # Proceed only if the “ANALYSIS” section contains text
+    if result_json["main_body_text"]["ANALYSIS"]["text"]:
+        output_path = output_dir/f"{path.name}"
+        output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def main(args):
     ### Init
@@ -82,14 +84,14 @@ def main(args):
         async with sem:
             await process_file(path, system_prompt, base_prompt, client, output_dir, model)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Segment Sections ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/section_segment.json", help="Path of configuration file (e.g., section_segment.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-o"], required=False, default="gpt", help="LLM Model for spliting opinion")
+    parser.add_argument("--model", choices=["gpt", "gpt-o"], required=False, default="gpt", help="LLM Model for Section Segmentation")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
