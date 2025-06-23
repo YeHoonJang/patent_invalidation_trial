@@ -65,8 +65,9 @@ class GPTClient:
                 valid_result = self.validate_with_schema(result_json)
                 return valid_result
 
-            except RateLimitError as e:
+            except (RateLimitError, ValidationError) as e:
                 retry_count += 1
+
                 if retry_count >= 5:
                     wait = 3600
                     retry_count = 0
