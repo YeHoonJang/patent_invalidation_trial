@@ -20,16 +20,6 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from utils.config_utils import load_config
 
-def load_valid_identifier(valid_identifier_dir) -> list:
-    valid_identifier = []
-    with open(valid_identifier_dir) as f:
-        for i, line in enumerate(f, start=1):
-            try:
-                valid_identifier.append(json.loads(line))
-            except json.JSONDecodeError as e:
-                print(f"[오류] {i}번째 {line} 파일 파싱 실패: {e}")
-    return valid_identifier
-
 def split_by_before_blocks(pages: dict) -> dict:
     def fuzzy(word):
         return r'\s*'.join(list(word)) + r'\s*'
@@ -116,8 +106,8 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     ### Load valid identifier files
-    valid_identifiers = load_valid_identifier(valid_identifier_dir)
-    document_name_set = {os.path.splitext(item["documentName"])[0] for item in valid_identifiers}
+    valid_identifiers = json.loads(valid_identifier_dir.read_text(encoding="utf-8"))
+    document_name_set = {os.path.splitext(item["documentName"])[0] for _, item in valid_identifiers.items()}
 
     #### Drop duplicates, only keep the first occurrence
     unique_file_map = {}
