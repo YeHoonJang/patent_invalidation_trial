@@ -1,0 +1,1 @@
+python src/preprocessing/info_extraction.py --config=/home/chaewon/workspace/STUDY/PTAB/config/information_extraction.json --model=gpt --prompt=information_extraction
