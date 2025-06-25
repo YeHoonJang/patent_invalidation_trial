@@ -34,7 +34,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         "system": system_prompt,
         "user": full_prompt
     }
-    
+
     if model == "gpt" or model == "gpt-o":
         mod = await client.client.moderations.create(input=full_prompt)
         if mod.results[0].flagged:
@@ -114,7 +114,7 @@ def main(args):
         async with sem:
             await predict_subdecision(path, system_prompt, base_prompt, client, idx2labels, output_dir, model)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{model}] Predict Subdecision ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Predict Subdecision ..."))
     
 
 if __name__ == "__main__":

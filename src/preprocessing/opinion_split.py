@@ -118,7 +118,7 @@ def main(args):
         async with sem:
             await split_opinion(path, system_prompt, base_prompt, client, output_dir, model)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{model}] Splitting Opinion ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Splitting Opinion ..."))
 
 
 if __name__ == "__main__":
