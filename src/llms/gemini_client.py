@@ -1,8 +1,13 @@
-import time
-import random
+import asyncio
+import json
 import pdb
+import random
+import time
+
 from google import genai
 from google.genai import types
+from jsonschema import ValidationError, validate
+
 
 class GeminiClient:
     def __init__(self, api_key, model, temperature, functions):
@@ -12,32 +17,45 @@ class GeminiClient:
         self.functions = functions
 
 
-    def split_opinion(self, prompt):
-        max_retries = 5
-        for attempt in range(max_retries):
-            try:
-                response = self.client.models.generate_content(
-                    model = self.model,
-                    contents = [
-                        types.Content(
-                            role="user",
-                            parts=[types.Part(text=prompt)]
-                        )
-                    ],
-                    config = types.GenerateContentConfig(
-                        system_instruction=(
-                            "You are a legal assistant who classifies PTAB legal text by speaker."
-                        ),
-                        response_mime_type="application/json",
-                        response_schema=self.functions
-                    )
+    async def _call(self, prompt):
+        return await self.client.aio.models.generate_content(
+            model = self.model,
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=prompt["user"])]
                 )
+            ],
+            config = types.GenerateContentConfig(
+                system_instruction=(
+                    prompt["system"]
+                ),
+                response_mime_type="application/json",
+                response_schema=self.functions
+            )
+        )
 
-                return response
+    
+    def validate_with_schema(self, result):
+        try:
+            validate(instance=result, schema=self.functions)
+        except ValidationError as e:
+            raise ValidationError(f"Gemini predict_subdecision validation error: {e.message}") from e
+        
+        return result
+
+
+    async def generate_valid_json(self, prompt):
+        retry_count = 0
+        while True:
+            try:
+                response = await self._call(prompt)
+                result = response.text
+                result_json = json.loads(result)
+                valid_result = self.validate_with_schema(result_json)
+                return valid_result
             
             except Exception as e:
-                pdb.set_trace()
-                wait = (2 ** attempt) + random.random()
-                print(f"[WARN] {type(e).__name__}, Retry after {wait:.1f}s ({attempt+1}/{max_retries})...")
-                time.sleep(wait)
-                continue
+                wait = (2 ** (retry_count - 1)) + random.random()
+                print(f"[WARN] {type(e).__name__}, Retry after {wait:.1f}s ({retry_count}/5)...")
+                await asyncio.sleep(wait)

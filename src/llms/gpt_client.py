@@ -1,13 +1,11 @@
 import asyncio
-import time
-import random
-from openai import AsyncOpenAI, OpenAI
-from openai import RateLimitError
-
-from jsonschema import validate, ValidationError
 import json
-
 import pdb
+import random
+import time
+
+from jsonschema import ValidationError, validate
+from openai import AsyncOpenAI, OpenAI, RateLimitError
 
 
 class GPTClient:
