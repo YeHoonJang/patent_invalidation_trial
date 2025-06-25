@@ -35,34 +35,32 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
     
     prompt = {
         "system": system_prompt,
-        "user": full_prompt}
+        "user": full_prompt
+    }
     
-    mod = await client.client.moderations.create(input=full_prompt)
-    if mod.results[0].flagged:
-        print(f"[BLOCKED] {path.name}")
-        (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
-        return
-    
-    response = await client.generate_valid_json(prompt)
-
     if model == "gpt" or model == "gpt-o":
-        result = response
-    elif model == "claude":
-        result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
-        try:
-            result = json.loads(result_json)
-        except Exception:
-            print(f"JSON Load Failed ...: {os.path.basename(path)}")
-    elif model == "gemini":
-        result_json = response.text
-        try:
-            result = json.loads(result_json)
-        except Exception:
-            print(f"JSON Load Failed ...: {os.path.basename(path)}")
+        mod = await client.client.moderations.create(input=full_prompt)
+        if mod.results[0].flagged:
+            print(f"[BLOCKED] {path.name}")
+            (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
+            return
+    
+    response = await client.generate_valid_json(prompt)    
+
+    # if model == "gpt" or model == "gpt-o":
+    #     result = response
+    # elif model == "claude":
+    #     result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
+    #     try:
+    #         result = json.loads(result_json)
+    #     except Exception:
+    #         print(f"JSON Load Failed ...: {os.path.basename(path)}")
+    # elif model == "gemini":
+    #     result = response
 
 
     output_path = output_dir/f"{model}_{os.path.basename(path)}"
-    output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
 
 
 def main(args):
