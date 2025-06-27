@@ -60,10 +60,12 @@ def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
 
-    labels_file = config["path"]["decision_type"]
+    labels_file = config["path"]["issue_type"]
     labels_path = root_path / labels_file
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
     idx2labels = {i:k for i, k in enumerate(labels)}
+    pdb.set_trace()
+
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
     system_prompt_file = config["prompt"]["system"]
