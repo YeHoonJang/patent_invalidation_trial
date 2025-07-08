@@ -21,10 +21,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from utils.config_utils import load_config
-from llms.llm_client import get_llm_client
+from llms.llm_client import get_llm_client, get_llm_batch_client
 
-
-async def process_file(path, system_prompt, base_prompt, client, output_dir, model):
+async def process_file(path, system_prompt, base_prompt, output_dir, client):
     data = json.loads(path.read_text(encoding="utf-8"))
     full_prompt = base_prompt.format(data=data)
 
@@ -36,9 +35,52 @@ async def process_file(path, system_prompt, base_prompt, client, output_dir, mod
     result_json = await client.generate_valid_json(prompt)
 
     # Proceed only if the “ANALYSIS” section contains text
-    if result_json["main_body_text"]["ANALYSIS"]["text"]:
+    analysis_text = (
+        result_json.get("main_body_text", {})
+            .get("ANALYSIS", {})
+            .get("text", "")
+    )
+
+    if analysis_text:
         output_path = output_dir/f"{path.name}"
         output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
+
+def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_dir: Path, client) -> None:
+    batch_path = batch_dir / "batch.jsonl"
+
+    lines = []
+    for p in files:
+        data   = json.loads(p.read_text(encoding="utf-8"))
+        full_prompt = base_prompt.format(data=data)
+
+        prompt = {
+            "system": system_prompt,
+            "user": full_prompt
+        }
+
+        lines.append(
+            client.make_request_line(prompt=prompt, custom_id=p.stem)
+        )
+
+    batch_path.write_text(
+        "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
+        encoding="utf-8"
+    )
+    print(f"Created batch file {batch_path.name} with {len(lines)} requests")
+
+    validated = client.generate_valid_json(batch_path)  # ↦ {custom_id: result}
+
+    for p in files:
+        result_json = validated.get(p.stem)
+
+        analysis_text = (
+            result_json.get("main_body_text", {})
+               .get("ANALYSIS", {})
+               .get("text", "")
+        )
+
+        if analysis_text:
+            (output_dir / p.name).write_text(json.dumps(result_json, indent=2), "utf-8")
 
 def main(args):
     ### Init
@@ -65,33 +107,48 @@ def main(args):
         raise ValueError(f"Unsupported model: {model}")
 
     if not api_key:
-        raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
+        raise RuntimeError(f"{model.upper()}_API_KEY environment variable is missing")
 
     input_dir = root_path / config["path"]["input_dir"]
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    all_files = input_dir.glob("*.json")
+    files = [p for p in all_files if not (output_dir / p.name).exists()]
+
     llm_params = config[model]["llm_params"]
 
-    client = get_llm_client(model, api_key, **llm_params)
+    mode = args.mode.lower()
+    if mode == "batch":
+        batch_dir = root_path / config["batch"]["batch_dir"] / args.prompt / config[model]["llm_params"]["model"]
+        batch_dir.mkdir(parents=True, exist_ok=True)
 
-    all_files = input_dir.glob("*.json")
-    files = [p for p in all_files if not (output_dir / f"{model}_{p.name}").exists()]
+    ### Load Model
+    if mode == "async":
+        client = get_llm_client(model, api_key, **llm_params)
+    elif mode == "batch":
+        llm_params = {**llm_params, "window": config["batch"]["window"]}
+        client = get_llm_batch_client(model, api_key, **llm_params)
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
 
-    sem = asyncio.Semaphore(config["async"]["concurrency"])
+    if mode == "async":
+        sem = asyncio.Semaphore(config["async"]["concurrency"])
 
-    async def sem_task(path):
-        async with sem:
-            await process_file(path, system_prompt, base_prompt, client, output_dir, model)
+        async def sem_task(path):
+            async with sem:
+                await process_file(path, system_prompt, base_prompt, output_dir, client)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
-
+        asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
+    elif mode == "batch":
+        batch_process_file(files, system_prompt, base_prompt, output_dir, batch_dir, client)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/section_segment.json", help="Path of configuration file (e.g., section_segment.json)")
     parser.add_argument("--model", choices=["gpt", "gpt-o"], required=False, default="gpt", help="LLM Model for Section Segmentation")
+    parser.add_argument("--mode", choices=["async", "batch"], required=True, default="batch", help="Mode for Section Segmentation")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()

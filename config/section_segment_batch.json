@@ -1,0 +1,185 @@
+{
+    "path": {
+        "root_path": "/home/chaewon/workspace/STUDY/PTAB",
+        "input_dir": "data/cleaned/ptab",
+        "output_dir": "data"
+    },
+    "prompt": {
+        "prompt_dir": "data/prompt",
+        "system": "section_segment_system.txt",
+        "section_segmentation": "section_segmentation.txt"
+    },
+    "async": {
+        "concurrency": 3
+    },
+    "batch": {
+        "batch_dir": "data/cleaned/batch",
+        "window": "24h"
+    },
+    "gpt": {
+        "llm_params": {
+            "model": "gpt-4o-2024-08-06",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "segment_ptab_sections",
+                        "description": "Segment PTAB legal text into structured sections and footnotes.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "main_body_text": {
+                                    "type": "object",
+                                    "properties": {
+                                        "DECISION ON APPEAL": {
+                                            "type": "object",
+                                            "description": "The section Summarizes the appealed claims, grounds for rejection, and the final outcome.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "STATEMENT OF THE CASE": {
+                                            "type": "object",
+                                            "description": "The section Provides a factual description of the invention’s background, appealed claims, cited prior art, findings of facts, and key issues.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "ANALYSIS": {
+                                            "type": "object",
+                                            "description": "The section includes the application of legal principles, (appellant's/examiner's) arguments, technical reasoning, claim interpretation, and comparison with the prior art.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "DECISION/ORDER": {
+                                            "type": "object",
+                                            "description": "The section includes the conclusion and the PTAB’s final determination on the appeal.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "DECISION ON APPEAL",
+                                        "STATEMENT OF THE CASE",
+                                        "ANALYSIS",
+                                        "DECISION/ORDER"
+                                    ]
+                                },
+                                "footnotes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "main_body_text",
+                                "footnotes"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "segment_ptab_sections"
+                }
+            }
+        }
+    },
+    "gpt-o": {
+        "llm_params": {
+            "model": "o3-2025-04-16",
+            "temperature": 0,
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "segment_ptab_sections",
+                        "description": "Segment PTAB legal text into structured sections and footnotes.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "main_body_text": {
+                                    "type": "object",
+                                    "properties": {
+                                        "DECISION ON APPEAL": {
+                                            "type": "object",
+                                            "description": "The section Summarizes the appealed claims, grounds for rejection, and the final outcome.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "STATEMENT OF THE CASE": {
+                                            "type": "object",
+                                            "description": "The section Provides a factual description of the invention’s background, appealed claims, cited prior art, findings of facts, and key issues.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "ANALYSIS": {
+                                            "type": "object",
+                                            "description": "The section includes the application of legal principles, (appellant's/examiner's) arguments, technical reasoning, claim interpretation, and comparison with the prior art.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "DECISION/ORDER": {
+                                            "type": "object",
+                                            "description": "The section includes the conclusion and the PTAB’s final determination on the appeal.",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "DECISION ON APPEAL",
+                                        "STATEMENT OF THE CASE",
+                                        "ANALYSIS",
+                                        "DECISION/ORDER"
+                                    ]
+                                },
+                                "footnotes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "main_body_text",
+                                "footnotes"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "segment_ptab_sections"
+                }
+            }
+        }
+    }
+}
