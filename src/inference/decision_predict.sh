@@ -1,4 +1,1 @@
-python /home/yehoon/workspace/patent_invalidation_trial/src/inference/decision_predict.py \
---config "/home/yehoon/workspace/patent_invalidation_trial/config/decision_predict.json" \
---model "gemini" \
---prompt "subdecision_type"
+python /home/yehoon/workspace/patent_invalidation_trial/src/inference/decision_predict.py --config "/home/yehoon/workspace/patent_invalidation_trial/config/decision_predict.json" --input_model "o3-2025-04-16" --inference_model "gemini" --prompt "subdecision_type"

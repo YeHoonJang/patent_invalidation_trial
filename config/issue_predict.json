@@ -2,15 +2,15 @@
     "path":{
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/output_sample/opinion_only",
+        "input_dir": "data/json/opinion_split/output_sample/opinion_only/o3-2025-04-16",
         "output_dir": "data/json/decision_predict/output_sample",
         "log_dir": "log",
-        "decision_type": "data/json/decision_type.json"
+        "issue_type": "data/json/issue_type.json"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
-        "subdecision_type": "subdecision_type.txt"
+        "issue_type": "issue_type.txt"
     },
     "async": {
         "concurrency": 3
@@ -21,20 +21,20 @@
             "temperature": 0.0,
             "functions":[
                 {
-                    "name": "predict_subdecision",
-                    "description": "PTAB decision index as defined in Decision Type Dictionary",
+                    "name": "predict_issue_type",
+                    "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "decision_type": {
+                            "issue_type": {
                                 "type": "integer"
                         }
                     },
-                    "required": ["decision_type"]
+                    "required": ["issue_type"]
                     } 
                 }
             ],
-            "function_call": {"name": "predict_subdecision"}
+            "function_call": {"name": "predict_issue_type"}
         }
     },
     "gpt-o": {
@@ -43,40 +43,40 @@
             "temperature": 0,
             "functions":[
                 {
-                    "name": "predict_subdecision",
-                    "description": "PTAB decision index as defined in Decision Type Dictionary",
+                    "name": "predict_issue_type",
+                    "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "decision_type": {
+                            "issue_type": {
                                 "type": "integer"
                         }
                     },
-                    "required": ["decision_type"]
+                    "required": ["issue_type"]
                     } 
                 }
             ],
-            "function_call": {"name": "predict_subdecision"}
+            "function_call": {"name": "predict_issue_type"}
         }
     },
     "claude": {
         "llm_params":{
-            "model": "claude-opus-4-20250514",
+            "model": "claude-sonnet-4-20250514",
             "temperature": 0.0,
             "max_tokens": 32000,
             "timeout": 3600,
             "functions":[
                 {
-                    "name": "predict_subdecision",
-                    "description": "PTAB decision index as defined in Decision Type Dictionary",
+                    "name": "predict_issue_type",
+                    "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
                     "input_schema": {
                         "type": "object",
                         "properties": {
-                            "decision_type": {
+                            "issue_type": {
                                 "type": "integer"
                             }
                         },
-                        "required": ["decision_type"]
+                        "required": ["issue_type"]
                     } 
                 }
             ] 
@@ -89,11 +89,11 @@
             "functions":{
                 "type": "object",
                 "properties": {
-                    "decision_type": {
+                    "issue_type": {
                         "type": "integer"
                     }
                 },
-                "required": ["decision_type"]
+                "required": ["issue_type"]
             } 
         }
     }
