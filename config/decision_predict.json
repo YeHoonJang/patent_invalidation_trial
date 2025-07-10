@@ -2,7 +2,7 @@
     "path":{
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/output_sample/opinion_only/o3-2025-04-16",
+        "input_dir": "data/json/opinion_split/output_sample/opinion_only",
         "output_dir": "data/json/decision_predict/output_sample",
         "log_dir": "log",
         "decision_type": "data/json/decision_type.json"
