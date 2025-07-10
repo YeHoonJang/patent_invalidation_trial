@@ -60,11 +60,10 @@ def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
 
-    labels_file = config["path"]["issue_type"]
+    labels_file = config["path"]["decision_type"]
     labels_path = root_path / labels_file
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
     idx2labels = {i:k for i, k in enumerate(labels)}
-    pdb.set_trace()
 
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
@@ -84,7 +83,7 @@ def main(args):
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
 
-    model = args.model.lower()
+    model = args.inference_model.lower()
 
     if model == "gpt":
         api_key = os.getenv("OPENAI_API_KEY")
@@ -100,9 +99,9 @@ def main(args):
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
     
-    input_dir = root_path / config["path"]["input_dir"]
+    input_dir = root_path / config["path"]["input_dir"] / args.input_model
     opinion_split_version = input_dir.parent.name
-    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version/ config[model]["llm_params"]["model"]
+    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]["llm_params"]["model"]}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     llm_params = config[model]["llm_params"]
@@ -111,19 +110,22 @@ def main(args):
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
     sem = asyncio.Semaphore(config["async"]["concurrency"])
+    # pdb.set_trace()
 
     async def sem_task(path):
         async with sem:
             await predict_subdecision(path, system_prompt, base_prompt, client, idx2labels, output_dir, model)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Predict Subdecision ..."))
+    print(f"[Async] {args.input_model} ({args.prompt}) -> {config[model]['llm_params']['model']}")
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Subdecision ..."))
     
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-o", "claude", "gemini"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-15.flash", "gemini-1.5-pro", "gemini-2.5-pro"], required=True, default=None, help="LLM Model that makes input data")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
