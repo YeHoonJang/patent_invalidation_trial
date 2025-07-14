@@ -102,7 +102,6 @@
     "gpt-o": {
         "llm_params": {
             "model": "o3-2025-04-16",
-            "temperature": 0,
             "functions": [
                 {
                     "type": "function",
