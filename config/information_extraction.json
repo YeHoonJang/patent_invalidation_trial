@@ -1,7 +1,7 @@
 {
     "path": {
         "root_path": "/home/chaewon/workspace/STUDY/PTAB",
-        "input_dir": "data/cleaned/ptab/applicantPatent",
+        "input_dir": "data/cleaned/ptab",
         "output_dir": "data/information_extraction/metadata"
     }
 }
