@@ -45,9 +45,7 @@ async def process_file(path, system_prompt, base_prompt, output_dir, client):
         output_path = output_dir/f"{path.name}"
         output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
-def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_dir: Path, client) -> None:
-    batch_path = batch_dir / "batch.jsonl"
-
+def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_path: Path, client) -> None:
     lines = []
     for p in files:
         data   = json.loads(p.read_text(encoding="utf-8"))
@@ -57,7 +55,6 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
             "system": system_prompt,
             "user": full_prompt
         }
-
         lines.append(
             client.make_request_line(prompt=prompt, custom_id=p.stem)
         )
@@ -120,8 +117,11 @@ def main(args):
 
     mode = args.mode.lower()
     if mode == "batch":
-        batch_dir = root_path / config["batch"]["batch_dir"] / args.prompt / config[model]["llm_params"]["model"]
+        batch_dir = root_path / config["path"]["output_dir"] / args.prompt / "batch"
         batch_dir.mkdir(parents=True, exist_ok=True)
+
+        batch_path = batch_dir / config[model]["llm_params"]["model"]
+        batch_path = batch_path.with_suffix(".jsonl")
 
     ### Load Model
     if mode == "async":
@@ -141,7 +141,7 @@ def main(args):
 
         asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
     elif mode == "batch":
-        batch_process_file(files, system_prompt, base_prompt, output_dir, batch_dir, client)
+        batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path, client)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -13,7 +13,6 @@
         "concurrency": 3
     },
     "batch": {
-        "batch_dir": "data/cleaned/batch",
         "window": "24h"
     },
     "gpt": {
