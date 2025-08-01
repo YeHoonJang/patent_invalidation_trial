@@ -9,7 +9,7 @@ import transformers
 import torch
 
 
-class LlamaClient:
+class QwenClient:
     def __init__(self, **model_config):
         self.model_name = model_config.pop("model")
         self.load_model(model_config=model_config)
@@ -24,7 +24,9 @@ class LlamaClient:
             else "cuda"
         )
         torch_dtype = model_config.pop("torch_dtype", None)
-        if torch_dtype and isinstance(torch_dtype, str) and torch_dtype != "auto":
+        if torch_dtype == "auto":
+            torch_dtype = None
+        elif isinstance(torch_dtype, str):
             torch_dtype = getattr(torch, torch_dtype)
 
         tokenizer = AutoTokenizer.from_pretrained(self.model_name, **model_config)
@@ -41,31 +43,39 @@ class LlamaClient:
         self.model = model
 
     async def _call(self, prompt):
-        if self.model_name.lower().endswith("instruct"):
-            messages = [
-                {"role": "system", "content": prompt["system"]},
-                {"role": "user", "content": prompt["user"]},
-            ]
+        messages = [
+            {"role": "system", "content": prompt["system"]},
+            {"role": "user", "content": prompt["user"]},
+        ]
 
-            text = self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
-            )
-            inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-        else:
-            inputs = self.tokenizer(prompt.get("user", ""), return_tensors="pt").to(self.model.device)
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=True
+        )
 
-        response = self.model.generate(**inputs, max_new_tokens=50, pad_token_id=self.model.config.eos_token_id[0] if isinstance(self.model.config.eos_token_id, list) else self.model.config.eos_token_id)
-        generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
-        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
+
+        # conduct text completion
+        generated_ids = self.model.generate(**inputs, max_new_tokens=32768)
+        output_ids = generated_ids[0][len(inputs.input_ids[0]):].tolist()
+
+        try:
+            # rindex finding 151668 (</think>)
+            index = len(output_ids) - output_ids[::-1].index(151668)
+        except ValueError:
+            index = 0
+
+        thinking_content = self.tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
+        content = self.tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+        return thinking_content, content
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0
         while True:
             try:
-                response = await self._call(prompt)
+                reasoning, response = await self._call(prompt)
                 return response
             except Exception as e:
                 retry_count += 1
