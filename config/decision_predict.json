@@ -115,5 +115,12 @@
             "device_map": "auto",
             "torch_dtype": "float16"
         }
+    },
+    "qwen": {
+        "llm_params": {
+            "model": "Qwen/Qwen3-8B",
+            "device_map": "auto",
+            "torch_dtype": "float16"
+        }
     }
 }

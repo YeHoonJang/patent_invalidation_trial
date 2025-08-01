@@ -43,7 +43,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             return
 
     response = await client.generate_valid_json(prompt)
-    if model == "llama":
+    if model in ["llama", "qwen"]:
         try:
             result = json.loads(response)
             if isinstance(result, dict) and "decision_type" in result.keys():
@@ -79,7 +79,6 @@ def main(args):
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
     idx2labels = {i:k for i, k in enumerate(labels)}
 
-
     prompt_dir_name = config["prompt"]["prompt_dir"]
     system_prompt_file = config["prompt"]["system"]
     user_prompt_file = config["prompt"][args.prompt]
@@ -88,10 +87,8 @@ def main(args):
     system_prompt_path = prompt_dir / system_prompt_file
     user_prompt_path = prompt_dir / user_prompt_file
 
-
     with open(system_prompt_path, "r") as f:
         system_prompt = f.read()
-
     with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
 
@@ -108,7 +105,7 @@ def main(args):
         api_key = os.getenv("ANTHROPIC_API_KEY")
     elif model == "gemini":
         api_key = os.getenv("GOOGLE_API_KEY")
-    elif model == "llama":
+    elif model in ["llama", "qwen"]:
        use_api = False
     else:
         raise ValueError(f"Unsupported model: {model}")
@@ -141,7 +138,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
     parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-15.flash", "gemini-1.5-pro", "gemini-2.5-pro", "reg_ex"], required=True, default=None, help="LLM Model that makes input data")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
