@@ -1,5 +1,5 @@
 {
-    "path":{
+    "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/output_sample/opinion_only",
@@ -16,10 +16,10 @@
         "concurrency": 3
     },
     "gpt": {
-        "llm_params":{
+        "llm_params": {
             "model": "gpt-4o",
             "temperature": 0.0,
-            "functions":[
+            "functions": [
                 {
                     "name": "predict_subdecision",
                     "description": "PTAB decision index as defined in Decision Type Dictionary",
@@ -28,20 +28,24 @@
                         "properties": {
                             "decision_type": {
                                 "type": "integer"
-                        }
-                    },
-                    "required": ["decision_type"]
-                    } 
+                            }
+                        },
+                        "required": [
+                            "decision_type"
+                        ]
+                    }
                 }
             ],
-            "function_call": {"name": "predict_subdecision"}
+            "function_call": {
+                "name": "predict_subdecision"
+            }
         }
     },
     "gpt-o": {
-        "llm_params":{
+        "llm_params": {
             "model": "o3-2025-04-16",
             "temperature": 0,
-            "functions":[
+            "functions": [
                 {
                     "name": "predict_subdecision",
                     "description": "PTAB decision index as defined in Decision Type Dictionary",
@@ -50,22 +54,26 @@
                         "properties": {
                             "decision_type": {
                                 "type": "integer"
-                        }
-                    },
-                    "required": ["decision_type"]
-                    } 
+                            }
+                        },
+                        "required": [
+                            "decision_type"
+                        ]
+                    }
                 }
             ],
-            "function_call": {"name": "predict_subdecision"}
+            "function_call": {
+                "name": "predict_subdecision"
+            }
         }
     },
     "claude": {
-        "llm_params":{
+        "llm_params": {
             "model": "claude-opus-4-20250514",
             "temperature": 0.0,
             "max_tokens": 32000,
             "timeout": 3600,
-            "functions":[
+            "functions": [
                 {
                     "name": "predict_subdecision",
                     "description": "PTAB decision index as defined in Decision Type Dictionary",
@@ -76,25 +84,36 @@
                                 "type": "integer"
                             }
                         },
-                        "required": ["decision_type"]
-                    } 
+                        "required": [
+                            "decision_type"
+                        ]
+                    }
                 }
-            ] 
+            ]
         }
     },
     "gemini": {
-        "llm_params":{
+        "llm_params": {
             "model": "gemini-2.5-pro",
             "temperature": 0.0,
-            "functions":{
+            "functions": {
                 "type": "object",
                 "properties": {
                     "decision_type": {
                         "type": "integer"
                     }
                 },
-                "required": ["decision_type"]
-            } 
+                "required": [
+                    "decision_type"
+                ]
+            }
+        }
+    },
+    "llama": {
+        "llm_params": {
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "device_map": "auto",
+            "torch_dtype": "float16"
         }
     }
 }

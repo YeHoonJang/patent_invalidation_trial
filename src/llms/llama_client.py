@@ -1,0 +1,78 @@
+import asyncio
+import json
+import pdb
+import random
+import time
+
+from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
+import transformers
+import torch
+
+
+class LlamaClient:
+    def __init__(self, **model_config):
+        self.model_name = model_config.pop("model")
+        self.load_model(model_config=model_config)
+
+    def load_model(
+        self, device_map: str = "cuda", model_config: dict = {}, cache_dir: str = None
+    ):
+        config = AutoConfig.from_pretrained(self.model_name, **model_config)
+        self.device = (
+            device_map
+            if any(key in device_map for key in ["cuda", "cpu", "mps"])
+            else "cuda"
+        )
+        torch_dtype = model_config.pop("torch_dtype", None)
+        if torch_dtype and isinstance(torch_dtype, str) and torch_dtype != "auto":
+            torch_dtype = getattr(torch, torch_dtype)
+
+        tokenizer = AutoTokenizer.from_pretrained(self.model_name, **model_config)
+        if "cuda" in device_map or "cpu" in device_map:
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch_dtype,
+                device_map=device_map,
+                config=config,
+                **({ "cache_dir": cache_dir } if cache_dir else {}),
+            )
+
+        self.tokenizer = tokenizer
+        self.model = model
+
+    async def _call(self, prompt):
+        if self.model_name.lower().endswith("instruct"):
+            messages = [
+                {"role": "system", "content": prompt["system"]},
+                {"role": "user", "content": prompt["user"]},
+            ]
+
+            inputs = self.tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(self.model.device)
+            inputs = {
+                "input_ids": inputs.to(self.model.device),
+                "attention_mask": torch.ones_like(inputs).to(self.model.device)
+            }
+        else:
+            inputs = self.tokenizer(prompt.get("user", ""), return_tensors="pt").to(self.model.device)
+
+        response = self.model.generate(**inputs, max_new_tokens=50, pad_token_id=self.model.config.eos_token_id[0] if isinstance(self.model.config.eos_token_id, list) else self.model.config.eos_token_id)
+        generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
+        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
+    async def generate_valid_json(self, prompt: str) -> dict:
+        retry_count = 0
+        while True:
+            try:
+                response = await self._call(prompt)
+                return response
+            except:
+                retry_count += 1
+
+                if retry_count >= 50:
+                    wait = 3600
+                    retry_count = 0
+                    print("f[RateLimit] Retries exceeded 5 times. Please wait an hour.")
+                else:
+                    wait = (2 ** (retry_count - 1)) + random.random()
+                    print(f"[WARN] {type(e).__name__}, Retry after {wait:.1f}s ({retry_count}/5)...")
+                await asyncio.sleep(wait)
