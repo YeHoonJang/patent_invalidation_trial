@@ -2,6 +2,7 @@ from .gpt_client import GPTClient
 from .gpt_batch_client import GPTBatchClient
 from .claude_client import ClaudeClient
 from .gemini_client import GeminiClient
+from .llama_client import LlamaClient
 
 
 def get_llm_client(model_name, api_key, **kwargs):
@@ -13,6 +14,8 @@ def get_llm_client(model_name, api_key, **kwargs):
         return ClaudeClient(api_key, **kwargs)
     elif name == "gemini":
         return GeminiClient(api_key, **kwargs)
+    elif name == "llama":
+        return LlamaClient(**kwargs)
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 

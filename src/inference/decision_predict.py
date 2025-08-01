@@ -18,9 +18,8 @@ from llms.llm_client import get_llm_client
 
 
 async def predict_subdecision(path, system_prompt, base_prompt, client, labels, output_dir, model):
-
     data = json.loads(path.read_text(encoding="utf-8"))
-    # pdb.set_trace()
+
     appellant = data["appellant_arguments"]
     examiner = data["examiner_findings"]
 
@@ -35,14 +34,29 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         "user": full_prompt
     }
 
+
     if model == "gpt" or model == "gpt-o":
         mod = await client.client.moderations.create(input=full_prompt)
         if mod.results[0].flagged:
             print(f"[BLOCKED] {path.name}")
             (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
             return
-    
+
     response = await client.generate_valid_json(prompt)
+    if model == "llama":
+        try:
+            result = json.loads(response)
+            if isinstance(result, dict) and "decision_type" in result.keys():
+                json_result = {"decision_type": int(result["decision_type"])}
+        except json.JSONDecodeError:
+            pass
+
+        try:
+            json_result = {"decision_type": int(response)}
+        except ValueError:
+            pass
+    else:
+        json_result = response
 
     # if model == "gpt" or model == "gpt-o":
     #     result = response
@@ -51,9 +65,9 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
     # elif model == "gemini":
     #     result = response
 
-
-    output_path = output_dir/f"{os.path.basename(path)}"
-    output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
+    if json_result:
+        output_path = output_dir/f"{os.path.basename(path)}"
+        output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
 
 
 def main(args):
@@ -82,9 +96,10 @@ def main(args):
         base_prompt = f.read()
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
-
     model = args.inference_model.lower()
 
+    use_api = True
+    api_key = None
     if model == "gpt":
         api_key = os.getenv("OPENAI_API_KEY")
     elif model == "gpt-o":
@@ -93,24 +108,25 @@ def main(args):
         api_key = os.getenv("ANTHROPIC_API_KEY")
     elif model == "gemini":
         api_key = os.getenv("GOOGLE_API_KEY")
+    elif model == "llama":
+       use_api = False
     else:
         raise ValueError(f"Unsupported model: {model}")
-    
-    if not api_key:
+
+    if (use_api) and (not api_key):
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
-    
+
     input_dir = root_path / config["path"]["input_dir"] / args.input_model
     opinion_split_version = input_dir.parent.name
-    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]["llm_params"]["model"]}"
-    output_dir.mkdir(parents=True, exist_ok=True)
 
+    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]['llm_params']['model']}"
+    output_dir.mkdir(parents=True, exist_ok=True)
     llm_params = config[model]["llm_params"]
     client = get_llm_client(model, api_key, **llm_params)
-    
+
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
     sem = asyncio.Semaphore(config["async"]["concurrency"])
-    # pdb.set_trace()
 
     async def sem_task(path):
         async with sem:
@@ -118,14 +134,14 @@ def main(args):
 
     print(f"[Async] {args.input_model} ({args.prompt}) -> {config[model]['llm_params']['model']}")
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Subdecision ..."))
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
     parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-15.flash", "gemini-1.5-pro", "gemini-2.5-pro", "reg_ex"], required=True, default=None, help="LLM Model that makes input data")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
