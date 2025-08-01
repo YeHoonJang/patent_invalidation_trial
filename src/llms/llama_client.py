@@ -47,11 +47,13 @@ class LlamaClient:
                 {"role": "user", "content": prompt["user"]},
             ]
 
-            inputs = self.tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(self.model.device)
-            inputs = {
-                "input_ids": inputs.to(self.model.device),
-                "attention_mask": torch.ones_like(inputs).to(self.model.device)
-            }
+            text = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+            )
+            inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
         else:
             inputs = self.tokenizer(prompt.get("user", ""), return_tensors="pt").to(self.model.device)
 
@@ -65,7 +67,7 @@ class LlamaClient:
             try:
                 response = await self._call(prompt)
                 return response
-            except:
+            except Exception as e:
                 retry_count += 1
 
                 if retry_count >= 50:
