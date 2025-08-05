@@ -6,6 +6,8 @@ from .llama_client import LlamaClient
 from .qwen_client import QwenClient
 from .solar_client import SolarClient
 from .mistral_client import MistralClient
+from .deepseek_client import DeepSeekClient
+from .t5_client import T5Client
 
 
 def get_llm_client(model_name, api_key, **kwargs):
@@ -25,6 +27,10 @@ def get_llm_client(model_name, api_key, **kwargs):
         return QwenClient(**kwargs)
     elif name == "mistral":
         return MistralClient(**kwargs)
+    elif name == "deepseek":
+        return DeepSeekClient(**kwargs)
+    elif name == "t5":
+        return T5Client(**kwargs)
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 
