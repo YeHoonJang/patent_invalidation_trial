@@ -43,7 +43,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             return
 
     response = await client.generate_valid_json(prompt)
-    if model in ["llama", "qwen"]:
+    if model in ["llama", "qwen", "mistral"]:
         try:
             result = json.loads(response)
             if isinstance(result, dict) and "decision_type" in result.keys():
@@ -74,23 +74,27 @@ def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
 
-    labels_file = config["path"]["decision_type"]
-    labels_path = root_path / labels_file
+    # labels_file = config["path"]["decision_type"]
+    # labels_path = root_path / labels_file
+    labels_path = Path("src/inference/test/decision_type.json")
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
     idx2labels = {i:k for i, k in enumerate(labels)}
 
-    prompt_dir_name = config["prompt"]["prompt_dir"]
-    system_prompt_file = config["prompt"]["system"]
-    user_prompt_file = config["prompt"][args.prompt]
+    # prompt_dir_name = config["prompt"]["prompt_dir"]
+    # system_prompt_file = config["prompt"]["system"]
+    # user_prompt_file = config["prompt"][args.prompt]
 
-    prompt_dir = root_path / prompt_dir_name
-    system_prompt_path = prompt_dir / system_prompt_file
-    user_prompt_path = prompt_dir / user_prompt_file
+    # prompt_dir = root_path / prompt_dir_name
+    # system_prompt_path = prompt_dir / system_prompt_file
+    # user_prompt_path = prompt_dir / user_prompt_file
+    user_prompt_path = Path("src/inference/test/subdecision_type.txt")
 
-    with open(system_prompt_path, "r") as f:
-        system_prompt = f.read()
+    # with open(system_prompt_path, "r") as f:
+    #     system_prompt = f.read()
     with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
+
+    system_prompt = "You are an expert PTAB decision predictor."
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
     model = args.inference_model.lower()
@@ -105,7 +109,9 @@ def main(args):
         api_key = os.getenv("ANTHROPIC_API_KEY")
     elif model == "gemini":
         api_key = os.getenv("GOOGLE_API_KEY")
-    elif model in ["llama", "qwen"]:
+    elif model == "solar":
+        api_key = os.getenv("UPSTAGE_API_KEY")
+    elif model in ["llama", "qwen", "mistral"]:
        use_api = False
     else:
         raise ValueError(f"Unsupported model: {model}")
@@ -113,10 +119,14 @@ def main(args):
     if (use_api) and (not api_key):
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
 
-    input_dir = root_path / config["path"]["input_dir"] / args.input_model
-    opinion_split_version = input_dir.parent.name
+    # input_dir = root_path / config["path"]["input_dir"] / args.input_model
+    # opinion_split_version = input_dir.parent.name
 
-    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]['llm_params']['model']}"
+    # output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]['llm_params']['model']}"
+    # output_dir.mkdir(parents=True, exist_ok=True)
+
+    input_dir = Path("src/inference/test/input")
+    output_dir = Path("src/inference/test") / model
     output_dir.mkdir(parents=True, exist_ok=True)
     llm_params = config[model]["llm_params"]
     client = get_llm_client(model, api_key, **llm_params)
@@ -138,7 +148,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
     parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-15.flash", "gemini-1.5-pro", "gemini-2.5-pro", "reg_ex"], required=True, default=None, help="LLM Model that makes input data")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
