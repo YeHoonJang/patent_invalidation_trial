@@ -2,15 +2,16 @@
     "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/output_sample/opinion_only",
+        "input_dir": "data/json/opinion_split/output_sample/opinion_only_v2",
         "output_dir": "data/json/decision_predict/output_sample",
         "log_dir": "log",
-        "decision_type": "data/json/decision_type.json"
+        "decision_type": "data/json/coarse_decision_type.json"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
-        "subdecision_type": "subdecision_type.txt"
+        "subdecision_type": "subdecision_type.txt",
+        "subdecision_type_coarse": "subdecision_type_coarse.txt"
     },
     "async": {
         "concurrency": 3
