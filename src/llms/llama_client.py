@@ -18,11 +18,7 @@ class LlamaClient:
         self, device_map: str = "cuda", model_config: dict = {}, cache_dir: str = None
     ):
         config = AutoConfig.from_pretrained(self.model_name, **model_config)
-        self.device = (
-            device_map
-            if any(key in device_map for key in ["cuda", "cpu", "mps"])
-            else "cuda"
-        )
+
         torch_dtype = model_config.pop("torch_dtype", None)
         if torch_dtype and isinstance(torch_dtype, str) and torch_dtype != "auto":
             torch_dtype = getattr(torch, torch_dtype)
