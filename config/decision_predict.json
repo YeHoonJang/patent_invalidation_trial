@@ -122,5 +122,45 @@
             "device_map": "auto",
             "torch_dtype": "float16"
         }
+    },
+    "solar": {
+        "llm_params": {
+            "model": "solar-pro2",
+            "reasoning_effort": "high",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "predict_subdecision",
+                        "description": "PTAB decision index as defined in Decision Type Dictionary",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "decision_type": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "required": [
+                            "decision_type"
+                        ]
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "predict_subdecision"
+                }
+            }
+        }
+    },
+    "mistral": {
+        "llm_params": {
+            "model": "mistralai/Mistral-7B-Instruct-v0.3",
+            "device_map": "auto",
+            "torch_dtype": "float16"
+        }
     }
 }

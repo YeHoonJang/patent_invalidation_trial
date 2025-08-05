@@ -9,7 +9,7 @@ import transformers
 import torch
 
 
-class LlamaClient:
+class MistralClient:
     def __init__(self, **model_config):
         self.model_name = model_config.pop("model")
         self.load_model(model_config=model_config)
@@ -37,31 +37,35 @@ class LlamaClient:
         self.model = model
 
     async def _call(self, prompt):
-        if self.model_name.lower().endswith("instruct"):
-            messages = [
+        messages = [
                 {"role": "system", "content": prompt["system"]},
                 {"role": "user", "content": prompt["user"]},
-            ]
+        ]
 
-            text = self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
-            )
-            inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-        else:
-            inputs = self.tokenizer(prompt.get("user", ""), return_tensors="pt").to(self.model.device)
+        inputs = self.tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.model.device)
 
-        response = self.model.generate(**inputs, max_new_tokens=50, pad_token_id=self.model.config.eos_token_id[0] if isinstance(self.model.config.eos_token_id, list) else self.model.config.eos_token_id)
+        response = self.model.generate(**inputs,
+                                      max_new_tokens=100,
+                                      pad_token_id=self.tokenizer.eos_token_id)
+
         generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
-        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        content = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
+        parts = content.split("\n\n", 1)
+        answer = parts[0].strip()
+        explanation = parts[1].strip() if len(parts) > 1 else None
+        return answer, explanation
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0
         while True:
             try:
-                response = await self._call(prompt)
+                response, reasoning = await self._call(prompt)
                 return response
             except Exception as e:
                 retry_count += 1
