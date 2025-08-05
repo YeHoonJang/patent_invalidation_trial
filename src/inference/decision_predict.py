@@ -74,23 +74,21 @@ def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
 
-    # labels_file = config["path"]["decision_type"]
-    # labels_path = root_path / labels_file
-    labels_path = Path("src/inference/test/decision_type.json")
+    labels_file = config["path"]["decision_type"]
+    labels_path = root_path / labels_file
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
     idx2labels = {i:k for i, k in enumerate(labels)}
 
-    # prompt_dir_name = config["prompt"]["prompt_dir"]
-    # system_prompt_file = config["prompt"]["system"]
-    # user_prompt_file = config["prompt"][args.prompt]
+    prompt_dir_name = config["prompt"]["prompt_dir"]
+    system_prompt_file = config["prompt"]["system"]
+    user_prompt_file = config["prompt"][args.prompt]
 
-    # prompt_dir = root_path / prompt_dir_name
-    # system_prompt_path = prompt_dir / system_prompt_file
-    # user_prompt_path = prompt_dir / user_prompt_file
-    user_prompt_path = Path("src/inference/test/subdecision_type.txt")
+    prompt_dir = root_path / prompt_dir_name
+    system_prompt_path = prompt_dir / system_prompt_file
+    user_prompt_path = prompt_dir / user_prompt_file
 
-    # with open(system_prompt_path, "r") as f:
-    #     system_prompt = f.read()
+    with open(system_prompt_path, "r") as f:
+        system_prompt = f.read()
     with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
 
@@ -119,14 +117,10 @@ def main(args):
     if (use_api) and (not api_key):
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
 
-    # input_dir = root_path / config["path"]["input_dir"] / args.input_model
-    # opinion_split_version = input_dir.parent.name
+    input_dir = root_path / config["path"]["input_dir"] / args.input_model
+    opinion_split_version = input_dir.parent.name
 
-    # output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]['llm_params']['model']}"
-    # output_dir.mkdir(parents=True, exist_ok=True)
-
-    input_dir = Path("src/inference/test/input")
-    output_dir = Path("src/inference/test") / model
+    output_dir = root_path / config["path"]["output_dir"] / args.prompt / opinion_split_version / f"input_{args.input_model}" / f"output_{config[model]['llm_params']['model']}"
     output_dir.mkdir(parents=True, exist_ok=True)
     llm_params = config[model]["llm_params"]
     client = get_llm_client(model, api_key, **llm_params)
