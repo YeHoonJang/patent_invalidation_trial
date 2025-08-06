@@ -166,14 +166,12 @@
     "deepseek": {
         "llm_params": {
             "model": "deepseek-ai/DeepSeek-V2-Lite",
-            "device_map": "auto",
             "torch_dtype": "bfloat16"
         }
     },
     "t5": {
         "llm_params": {
             "model": "google/t5gemma-2b-2b-ul2-it",
-            "device_map": "auto",
             "torch_dtype": "bfloat16"
         }
     }
