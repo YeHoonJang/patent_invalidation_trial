@@ -163,5 +163,17 @@
             "device_map": "auto",
             "torch_dtype": "float16"
         }
+    },
+    "deepseek": {
+        "llm_params": {
+            "model": "deepseek-ai/deepseek-llm-7b-chat",
+            "torch_dtype": "bfloat16"
+        }
+    },
+    "t5": {
+        "llm_params": {
+            "model": "google/t5gemma-2b-2b-ul2-it",
+            "torch_dtype": "bfloat16"
+        }
     }
 }

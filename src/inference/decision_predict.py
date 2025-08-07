@@ -7,6 +7,8 @@ import sys
 import pdb
 from pathlib import Path
 
+import re
+
 from dotenv import load_dotenv
 from tqdm.asyncio import tqdm_asyncio
 
@@ -43,20 +45,27 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             return
 
     response = await client.generate_valid_json(prompt)
-    if model in ["llama", "qwen", "mistral"]:
+    result = {}
+    json_result = None
+
+    if model in ["llama", "qwen", "mistral", "t5", "deepseek"]:
         try:
             result = json.loads(response)
-            if isinstance(result, dict) and "decision_type" in result.keys():
-                json_result = {"decision_type": int(result["decision_type"])}
         except json.JSONDecodeError:
-            pass
-
-        try:
-            json_result = {"decision_type": int(response)}
-        except ValueError:
-            pass
+            cleaned = re.sub(r"^```json\s*|\s*```$", "", response.strip())
+            try:
+                result = json.loads(cleaned)
+            except json.JSONDecodeError:
+                if response.strip().isdigit():
+                    result = {"decision_type": int(response.strip())}
     else:
-        json_result = response
+        result = response
+
+    if isinstance(result, dict) and "decision_type" in result.keys():
+        try:
+            json_result = {"decision_type": int(result["decision_type"])}
+        except (ValueError, TypeError):
+            pass
 
     # if model == "gpt" or model == "gpt-o":
     #     result = response
@@ -92,8 +101,6 @@ def main(args):
     with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
 
-    system_prompt = "You are an expert PTAB decision predictor."
-
     load_dotenv(PROJECT_ROOT / "config" / ".env")
     model = args.inference_model.lower()
 
@@ -109,7 +116,7 @@ def main(args):
         api_key = os.getenv("GOOGLE_API_KEY")
     elif model == "solar":
         api_key = os.getenv("UPSTAGE_API_KEY")
-    elif model in ["llama", "qwen", "mistral"]:
+    elif model in ["llama", "qwen", "mistral", "deepseek", "t5"]:
        use_api = False
     else:
         raise ValueError(f"Unsupported model: {model}")
@@ -142,7 +149,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
     parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-15.flash", "gemini-1.5-pro", "gemini-2.5-pro", "reg_ex"], required=True, default=None, help="LLM Model that makes input data")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
