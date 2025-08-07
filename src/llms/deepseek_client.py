@@ -17,8 +17,6 @@ class DeepSeekClient:
     def load_model(
         self, device_map: str = "cuda", model_config: dict = {}, cache_dir: str = None
     ):
-        config = AutoConfig.from_pretrained(self.model_name, **model_config)
-
         torch_dtype = model_config.pop("torch_dtype", None)
         if torch_dtype and isinstance(torch_dtype, str) and torch_dtype != "auto":
             torch_dtype = getattr(torch, torch_dtype)
@@ -31,35 +29,42 @@ class DeepSeekClient:
                 self.model_name,
                 torch_dtype=torch_dtype,
                 device_map=device_map,
-                config=config,
+                **model_config,
                 trust_remote_code=True,
                 **({ "cache_dir": cache_dir } if cache_dir else {}),
             )
 
-        model.generation_config = GenerationConfig.from_pretrained(model_name)
+        model.generation_config = GenerationConfig.from_pretrained(self.model_name)
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
         self.tokenizer = tokenizer
         self.model = model
 
     async def _call(self, prompt):
-        messages = [
-            {"role": "system", "content": prompt["system"]},
-            {"role": "user", "content": prompt["user"]},
-        ]
+        if self.model_name.lower().endswith("chat"):
+            messages = [
+                {"role": "system", "content": prompt["system"]},
+                {"role": "user", "content": prompt["user"]}
+            ]
+            text = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
 
-        input_tensor = self.tokenizer.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            return_tensors="pt"
-        ).to(self.model.device)
-        pdb.set_trace()
+            inputs = self.tokenizer([text], return_tensors="pt")
+            input_ids = inputs["input_ids"].to(self.model.device)
+            attention_mask = inputs["attention_mask"].to(self.model.device)
 
-        response = self.model.generate(
-            input_tensor,
-            max_new_tokens=100)
-        generated_tokens = response[0][input_tensor.shape[1]:]
-        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+            response = self.model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                pad_token_id=self.tokenizer.eos_token_id,
+                max_new_tokens=100,
+                use_cache=False
+            )
+            generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
+            return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0

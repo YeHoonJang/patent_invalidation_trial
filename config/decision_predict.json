@@ -165,7 +165,7 @@
     },
     "deepseek": {
         "llm_params": {
-            "model": "deepseek-ai/DeepSeek-V2-Lite",
+            "model": "deepseek-ai/deepseek-llm-7b-chat",
             "torch_dtype": "bfloat16"
         }
     },
