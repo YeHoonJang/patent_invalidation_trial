@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
     parser.add_argument("--input_model", type=str, choices=["gpt-4o", "o3-2025-04-16", "claude-opus-4-20250514", "claude-sonnet-4-20250514", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.5-pro", "reg_ex"], required=True, default=None, help="LLM Model that makes input data")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
