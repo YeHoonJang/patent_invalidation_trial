@@ -1,0 +1,363 @@
+{
+    "path": {
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
+        "common_config": "config/common.json",
+        "original_dir": "data/json/opinion_split/input_sample/common",
+        "split_dir": "data/json/opinion_split/output_sample/opinion_only_v2/common",
+        "gt_dir": "data/json/opinion_split/output_sample/human_eval",
+        "output_dir": "data/json/opinion_split/llm_eval"
+    },
+    "prompt": {
+        "prompt_dir": "data/prompt/evaluation_os",
+        "system": "system.txt",
+        "user": "eval.txt"
+    },
+    "async": {
+        "concurrency": 3
+    },
+    "gpt": {
+        "llm_params": {
+            "model": "gpt-4.1-2025-04-14",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "name": "evaluate_split",
+                    "description": "Evaluate a model-generated PTAB opinion-split against ground-truth and return scores plus error analysis.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "scores": {
+                                "type": "object",
+                                "properties": {
+                                    "precision": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "recall": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "missing_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "extra_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "role_accuracy": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "critical_leakage_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "hallucination_detected": {"type": "boolean"}
+                                },
+                                "required": [
+                                    "precision", "recall", "missing_rate", "extra_rate", "role_accuracy", "critical_leakage_rate", "hallucination_detected"
+                                ]
+                            },
+                            "error_analysis": {
+                                "type": "object",
+                                "properties": {
+                                    "critical_leakage": {
+                                        "type": "array", 
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role":{"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    },
+                                    "missing": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "gt_text": {"type": "string"},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["gt_text", "gt_role"]
+                                        }
+                                    },
+                                    "extra": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "model_text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["model_text", "model_role"]
+                                        }
+                                    },
+                                    "misrole": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    }
+                                },
+                                "required": ["critical_leakage", "missing", "extra", "misrole"]
+                            },
+                            "summary_comment": { "type": "string" }
+                        },
+                        "required": ["scores", "error_analysis", "summary_comment"]
+                    }
+                }                  
+            ],
+            "function_call": {
+                "name": "evaluate_split"
+            }
+        }
+    },
+    "gpt-o": {
+        "llm_params": {
+            "model": "o3-2025-04-16",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "name": "evaluate_split",
+                    "description": "Evaluate a model-generated PTAB opinion-split against ground-truth and return scores plus error analysis.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "scores": {
+                                "type": "object",
+                                "properties": {
+                                    "precision": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "recall": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "missing_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "extra_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "role_accuracy": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "critical_leakage_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "hallucination_detected": {"type": "boolean"}
+                                },
+                                "required": [
+                                    "precision", "recall", "missing_rate", "extra_rate", "role_accuracy", "critical_leakage_rate", "hallucination_detected"
+                                ]
+                            },
+                            "error_analysis": {
+                                "type": "object",
+                                "properties": {
+                                    "critical_leakage": {
+                                        "type": "array", 
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role":{"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    },
+                                    "missing": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "gt_text": {"type": "string"},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["gt_text", "gt_role"]
+                                        }
+                                    },
+                                    "extra": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "model_text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["model_text", "model_role"]
+                                        }
+                                    },
+                                    "misrole": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    }
+                                },
+                                "required": ["critical_leakage", "missing", "extra", "misrole"]
+                            },
+                            "summary_comment": { "type": "string" }
+                        },
+                        "required": ["scores", "error_analysis", "summary_comment"]
+                    }
+                }                  
+            ],
+            "function_call": {
+                "name": "evaluate_split"
+            }
+        }
+    },
+    "claude": {
+        "llm_params": {
+            "model": "claude-opus-4-20250514",
+            "temperature": 0.0,
+            "max_tokens": 32000,
+            "timeout": 3600,
+            "functions": [
+                {
+                    "name": "evaluate_split",
+                    "description": "Evaluate a model-generated PTAB opinion-split against ground-truth and return scores plus error analysis.",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "scores": {
+                                "type": "object",
+                                "properties": {
+                                    "precision": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "recall": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "missing_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "extra_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "role_accuracy": {"type": "integer", "minimum": 0, "maximum": 100},
+                                    "critical_leakage_rate": {"type": "integer", "minimum": 0, "maximum": 100},"hallucination_detected": {"type": "boolean"}
+                                },
+                                "required": [
+                                    "precision", "recall", "missing_rate", "extra_rate", "role_accuracy", "critical_leakage_rate", "hallucination_detected"
+                                ]
+                            },
+                            "error_analysis": {
+                                "type": "object",
+                                "properties": {
+                                    "critical_leakage": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    },
+                                    "missing": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "gt_text": {"type": "string"},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["gt_text", "gt_role"]
+                                        }
+                                    },
+                                    "extra": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "model_text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["model_text", "model_role"]
+                                        }
+                                    },
+                                    "misrole": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {"type": "string"},
+                                                "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                                "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                            },
+                                            "required": ["text", "model_role", "gt_role"]
+                                        }
+                                    }
+                                },
+                                "required": ["critical_leakage", "missing", "extra", "misrole"]
+                            },
+                            "summary_comment": {"type": "string"}
+                        },
+                        "required": ["scores", "error_analysis", "summary_comment"]
+                    }
+                }
+            ]
+        }
+    },
+    "gemini": {
+        "llm_params": {
+            "model": "gemini-2.5-pro",
+            "temperature": 0.0,
+            "functions": {
+                "type": "object",
+                "properties": {
+                    "scores": {
+                        "type": "object",
+                        "properties": {
+                            "precision": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "recall": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "missing_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "extra_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "role_accuracy": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "critical_leakage_rate": {"type": "integer", "minimum": 0, "maximum": 100},
+                            "hallucination_detected": {"type": "boolean"}
+                        },
+                        "required": [
+                            "precision", "recall", "missing_rate", "extra_rate", "role_accuracy", "critical_leakage_rate", "hallucination_detected"
+                        ]
+                    },
+                    "error_analysis": {
+                        "type": "object",
+                        "properties": {
+                            "critical_leakage": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {"type": "string"},
+                                        "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                        "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                    },
+                                    "required": ["text", "model_role", "gt_role"]
+                                }
+                            },
+                            "missing": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "gt_text": {"type": "string"},
+                                        "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                    },
+                                    "required": ["gt_text", "gt_role"]
+                                }
+                            },
+                            "extra": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "model_text": {"type": "string"},
+                                        "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                    },
+                                    "required": ["model_text", "model_role"]
+                                }
+                            },
+                            "misrole": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {"type": "string"},
+                                        "model_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]},
+                                        "gt_role": {"type": "string", "enum": ["Appellant", "Examiner", "Board"]}
+                                    },
+                                    "required": ["text", "model_role", "gt_role"]
+                                }
+                            }
+                        },
+                        "required": ["critical_leakage", "missing", "extra", "misrole"]
+                    },
+                    "summary_comment": { "type": "string" }
+                },
+                "required": ["scores", "error_analysis", "summary_comment"]
+            }
+        }
+    }
+}
