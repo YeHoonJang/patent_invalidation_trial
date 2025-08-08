@@ -2,7 +2,7 @@
     "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/input_sample",
+        "input_dir": "data/json/opinion_split/input_sample/common",
         "output_dir": "data/json/opinion_split/output_sample",
         "log_dir": "log"
     },    
@@ -11,7 +11,7 @@
         "system": "system.txt",
         "opinion_only": "opinion_only.txt",
         "opinion_only_v2": "opinion_only_v2.txt",
-        "opinion_supplement": "opinion_supplement.txt"
+        "version_3": "version_3.txt"
     },
     "async": {
         "concurrency": 3
@@ -51,6 +51,37 @@
         "llm_params":{
             "model": "o3-2025-04-16",
             "temperature": 0,
+            "functions":[
+                {
+                    "name": "classify_by_speaker",
+                    "description": "classify arguments in PTAB document by speaker",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "appellant_arguments": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "examiner_findings": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        },
+                        "ptab_opinion": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["appellant_arguments", "examiner_findings", "ptab_opinion"]
+                    } 
+                }
+            ],
+            "function_call": {"name": "classify_by_speaker"}
+        }
+    },
+    "gpt-5": {
+        "llm_params":{
+            "model": "gpt-5-2025-08-07",
+            "temperature": "high",
             "functions":[
                 {
                     "name": "classify_by_speaker",
