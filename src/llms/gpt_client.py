@@ -19,16 +19,28 @@ class GPTClient:
 
     async def _call(self, prompt):
         if self.model.startswith("gpt"):
-            return await self.client.chat.completions.create(
-                model = self.model,
-                messages= [
-                    {"role": "system", "content": prompt["system"]},
-                    {"role": "user", "content": prompt["user"]}
-                ],
-                temperature=self.temperature,
-                functions=self.functions,
-                function_call=self.function_call
-                )
+            if self.model.startswith("gpt-5"):
+                return await self.client.chat.completions.create(
+                    model = self.model,
+                    messages= [
+                        {"role": "system", "content": prompt["system"]},
+                        {"role": "user", "content": prompt["user"]}
+                    ],
+                    reasoning_effort=self.temperature,
+                    functions=self.functions,
+                    function_call=self.function_call
+                    )
+            else:   
+                return await self.client.chat.completions.create(
+                    model = self.model,
+                    messages= [
+                        {"role": "system", "content": prompt["system"]},
+                        {"role": "user", "content": prompt["user"]}
+                    ],
+                    temperature=self.temperature,
+                    functions=self.functions,
+                    function_call=self.function_call
+                    )
         elif self.model.startswith("o"):
             return await self.client.chat.completions.create(
                 model = self.model,
