@@ -45,19 +45,7 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
             (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
             return
     
-    response = await client.generate_valid_json(prompt)    
-
-    # if model == "gpt" or model == "gpt-o":
-    #     result = response
-    # elif model == "claude":
-    #     result_json = response.content[0].text.replace("```json","").replace("```", "").strip()
-    #     try:
-    #         result = json.loads(result_json)
-    #     except Exception:
-    #         print(f"JSON Load Failed ...: {os.path.basename(path)}")
-    # elif model == "gemini":
-    #     result = response
-
+    response = await client.generate_valid_json(prompt)
 
     output_path = output_dir/f"{model}_{os.path.basename(path)}"
     output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
@@ -66,7 +54,6 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
 def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
-    
 
     prompt_dir_name = config["prompt"]["prompt_dir"]
     system_prompt_file = config["prompt"]["system"]
@@ -76,32 +63,26 @@ def main(args):
     system_prompt_path = prompt_dir / system_prompt_file
     user_prompt_path = prompt_dir / user_prompt_file
 
-
     with open(system_prompt_path, "r") as f:
         system_prompt = f.read()
 
     with open(user_prompt_path, "r") as f:
         base_prompt = f.read()
 
-
     load_dotenv(PROJECT_ROOT / "config" / ".env")
 
-
     model = args.model.lower()
-    if model == "gpt":
+    if "gpt" in model:
         api_key = os.getenv("OPENAI_API_KEY")
-    elif model == "gpt-o":
-        api_key = os.getenv("OPENAI_API_KEY")
-    elif model == "claude":
+    elif "claude" in model:
         api_key = os.getenv("ANTHROPIC_API_KEY")
-    elif model == "gemini":
+    elif "gemini" in model:
         api_key = os.getenv("GOOGLE_API_KEY")
     else:
         raise ValueError(f"Unsupported model: {model}")
     
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
-    
     
     input_dir = root_path / config["path"]["input_dir"]
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
@@ -125,7 +106,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/opinion_split.json", help="Path of configuration file (e.g., opinion_split.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-o", "claude", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
+    parser.add_argument("--model", choices=["gpt", "gpt-o", "gpt-5", "claude", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
 
     args = parser.parse_args()
