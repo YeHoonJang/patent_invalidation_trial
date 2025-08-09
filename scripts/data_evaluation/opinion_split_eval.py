@@ -113,7 +113,7 @@ def main(args):
 
     for s_model in split_models:
         for j_name in judge_names:
-            if "o3" or "4o" in j_name:
+            if "gpt" in j_name:
                 api_key = os.getenv("OPENAI_API_KEY")
             elif "claude" in j_name:
                 api_key = os.getenv("ANTHROPIC_API_KEY")

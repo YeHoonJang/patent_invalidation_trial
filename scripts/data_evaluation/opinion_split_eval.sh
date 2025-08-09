@@ -1,1 +1,1 @@
-python /home/yehoon/workspace/patent_invalidation_trial/scripts/data_evaluation/opinion_split_eval.py --config "/home/yehoon/workspace/patent_invalidation_trial/config/eval_split.json" --split_models "gpt-4o, gpt-o3, claude-sonnet, gemini-2.5-pro, gemini-2.5-flash" --judge_model "gpt, gpt-o"
+python /home/yehoon/workspace/patent_invalidation_trial/scripts/data_evaluation/opinion_split_eval.py --config "/home/yehoon/workspace/patent_invalidation_trial/config/eval_split.json" --split_models "gemini-2.5-pro" --judge_model "gpt, gpt-o"

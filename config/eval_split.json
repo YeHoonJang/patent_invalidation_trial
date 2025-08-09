@@ -3,7 +3,7 @@
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
         "original_dir": "data/json/opinion_split/input_sample/common",
-        "split_dir": "data/json/opinion_split/output_sample/opinion_only_v2/common",
+        "split_dir": "data/json/opinion_split/output_sample/version_3",
         "gt_dir": "data/json/opinion_split/output_sample/human_eval",
         "output_dir": "data/json/opinion_split/llm_eval"
     },
