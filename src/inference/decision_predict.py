@@ -50,22 +50,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
                 return
 
         # get input/output tokens
-        if "gemini" in model:
-            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
-        elif "gpt" in model:
-            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
-        elif "claude" in model:
-            response = await client.generate_valid_json(prompt)
-        elif "llama" in model:
-            pass
-        elif "qwen" in model:
-            pass
-        elif "mistral" in model:
-            pass
-        elif "t5" in model:
-            pass
-        elif "deepseek" in model:
-            pass
+        response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
         latency_ms = round((time.perf_counter() - t0) * 1000)
 

@@ -50,11 +50,8 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
                 (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
                 return
         
-        if "gemini" in model:
-            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
+        response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
-        else:
-            response = await client.generate_valid_json(prompt)
         
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
