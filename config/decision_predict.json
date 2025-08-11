@@ -2,8 +2,8 @@
     "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/output_sample/opinion_only_v2",
-        "output_dir": "data/json/decision_predict/output_sample",
+        "input_dir": "data/json/opinion_split/output/version_3",
+        "output_dir": "data/json/decision_predict/output",
         "log_dir": "log",
         "decision_type": "data/json/coarse_decision_type.json"
     },
