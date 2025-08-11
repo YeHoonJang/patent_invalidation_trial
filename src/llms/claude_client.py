@@ -47,7 +47,6 @@ class ClaudeClient:
         while True:
             try:
                 response = await self._call(prompt)
-                pdb.set_trace()
                 result_json = response.content[0].input
                 valid_result = self.validate_with_schema(result_json)
 
