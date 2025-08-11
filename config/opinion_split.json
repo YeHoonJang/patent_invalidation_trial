@@ -2,8 +2,8 @@
     "path": {
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/input_sample",
-        "output_dir": "data/json/opinion_split/output_sample",
+        "input_dir": "data/json/opinion_split/input",
+        "output_dir": "data/json/opinion_split/output",
         "log_dir": "log"
     },    
     "prompt": {
@@ -14,7 +14,7 @@
         "version_3": "version_3.txt"
     },
     "async": {
-        "concurrency": 3
+        "concurrency": 5
     },
     "gpt": {
         "llm_params":{
