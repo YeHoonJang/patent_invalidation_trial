@@ -47,9 +47,17 @@ class ClaudeClient:
         while True:
             try:
                 response = await self._call(prompt)
+                pdb.set_trace()
                 result_json = response.content[0].input
                 valid_result = self.validate_with_schema(result_json)
-                return valid_result
+
+                input_token = getattr(response.usage, "input_tokens", 0)
+                c_create = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+                c_read   = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+                cached_token = c_create + c_read
+                output_token = getattr(response.usage, "output_tokens", 0)
+                reasoning_token = 0
+                return valid_result, input_token, cached_token, output_token, reasoning_token
             
             except Exception as e:
                 wait = (2 ** (retry_count - 1)) + random.random()

@@ -74,10 +74,11 @@ class GPTClient:
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
 
-                input_token = response.usage.prompt_tokens
-                cached_token = response.usage.prompt_tokens_details.cached_tokens
-                output_token = response.usage.completion_tokens
-                reasoning_token = response.usage.completion_tokens_details.reasoning_tokens
+                input_token = getattr(getattr(response, "usage", None), "prompt_tokens", 0)
+                cached_token = getattr(getattr(getattr(response, "usage", None), "prompt_tokens_details", None), "cached_tokens", 0)
+                output_token = getattr(getattr(response, "usage", None), "completion_tokens", 0)
+                reasoning_token = getattr(getattr(getattr(response, "usage", None), "completion_tokens_details", None), "reasoning_tokens", 0)
+                
                 return valid_result, input_token, cached_token, output_token, reasoning_token
 
             except (RateLimitError, ValidationError) as e:
