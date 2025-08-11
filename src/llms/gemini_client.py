@@ -53,7 +53,12 @@ class GeminiClient:
                 result = response.text
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
-                return valid_result
+
+                input_token = response.usage_metadata.prompt_token_count
+                candidates_token = response.usage_metadata.candidates_token_count
+                
+                thought_token = response.usage_metadata.thoughts_token_count
+                return valid_result, input_token, candidates_token, thought_token
             
             except Exception as e:
                 wait = (2 ** (retry_count - 1)) + random.random()
