@@ -180,7 +180,7 @@ def main(args):
 
     run_name = f"decision_predict_{config[model]["llm_params"]["model"]}_{args.prompt}"
     wandb.init(entity=args.wandb_entity, project=args.wandb_project, name=run_name, config={
-        "task": "coarse_decision_predict",
+        "task": "decision_predict",
         "model_alias": model,
         "provider_model": config[model]["llm_params"]["model"],
         "prompt_name": args.prompt,
@@ -257,7 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
     parser.add_argument("--wandb_entity", default="patent_project")
-    parser.add_argument("--wandb_project", default="coarse_decision_predict")
+    parser.add_argument("--wandb_project", default="decision_predict")
     parser.add_argument("--run_name", default=None)
 
 
