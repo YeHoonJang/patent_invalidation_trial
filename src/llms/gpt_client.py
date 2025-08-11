@@ -73,7 +73,10 @@ class GPTClient:
                 result = response.choices[0].message.function_call.arguments
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
-                return valid_result
+
+                input_token = response.usage.prompt_tokens
+                output_token = response.usage.completion_tokens 
+                return valid_result, input_token, output_token
 
             except (RateLimitError, ValidationError) as e:
                 retry_count += 1
