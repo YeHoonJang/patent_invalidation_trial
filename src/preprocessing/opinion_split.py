@@ -51,13 +51,12 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
                 return
         
         if "gemini" in model:
-            response, input_token, candidates_token, thought_token = await client.generate_valid_json(prompt)
+            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
         else:
             response = await client.generate_valid_json(prompt)
         
         latency_ms = round((time.perf_counter() - t0) * 1000)
-        output_token = candidates_token + thought_token
 
         output_path = output_dir/f"{model}_{path.name}"
         output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
@@ -66,7 +65,9 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
             "name": path.name,
             "status": "ok",
             "input_tokens": input_token if input_token is not None else -1,
+            "cached_tokens": cached_token if cached_token is not None else -1,
             "output_token": output_token if output_token is not None else -1,
+            "reasoning_token": reasoning_token if reasoning_token is not None else -1,
             "latency_ms": latency_ms
         })
 
@@ -74,7 +75,9 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
             stats["processed"] += 1
             stats["succeeded"] += 1
             if input_token: stats["sum_input_tokens"] += input_token
+            if cached_token: stats["sum_cached_tokens"] += cached_token
             if output_token: stats["sum_output_tokens"] += output_token
+            if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
             stats["sum_latency_ms"] += latency_ms
 
     except Exception as e:
@@ -145,7 +148,9 @@ def main(args):
         "succeeded": 0,
         "failed": 0,
         "sum_input_tokens": 0,
+        "sum_cached_tokens": 0,
         "sum_output_tokens": 0,
+        "sum_reasoning_tokens": 0,
         "sum_latency_ms": 0
     }
 
@@ -169,11 +174,15 @@ def main(args):
         wandb.summary["files_succeeded"] = stats["succeeded"]
         wandb.summary["files_failed"] = stats["failed"]
         wandb.summary["sum_input_tokens"] = stats["sum_input_tokens"]
+        wandb.summary["sum_cached_tokens"] = stats["sum_cached_tokens"]
         wandb.summary["sum_output_tokens"] = stats["sum_output_tokens"]
+        wandb.summary["sum_reasoning_tokens"] = stats["sum_reasoning_tokens"]
         wandb.summary["total_latency_ms"] = stats["sum_latency_ms"]
         if stats["processed"]:
             wandb.summary["avg_input_tokens"] = round(stats["sum_input_tokens"]  / stats["processed"], 2)
+            wandb.summary["avg_cached_tokens"] = round(stats["sum_cached_tokens"]  / stats["processed"], 2)
             wandb.summary["avg_output_tokens"] = round(stats["sum_output_tokens"] / stats["processed"], 2)
+            wandb.summary["avg_reasoning_tokens"] = round(stats["sum_reasoning_tokens"] / stats["processed"], 2)
             wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
         wandb.finish()
 

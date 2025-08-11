@@ -51,12 +51,11 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
 
         # get input/output tokens
         if "gemini" in model:
-            response, input_token, candidates_token, thought_token = await client.generate_valid_json(prompt)
-            output_token = candidates_token + thought_token
+            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
         elif "gpt" in model:
-            pass
+            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
         elif "claude" in model:
-            pass
+            response = await client.generate_valid_json(prompt)
         elif "llama" in model:
             pass
         elif "qwen" in model:
@@ -101,7 +100,9 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             "name": path.name,
             "status": "ok" if json_result else "parse_fail",
             "input_tokens": input_token if input_token is not None else -1,
+            "cached_tokens": cached_token if cached_token is not None else -1,
             "output_token": output_token if output_token is not None else -1,
+            "reasoning_token": reasoning_token if reasoning_token is not None else -1,
             "latency_ms": latency_ms
         })
 
@@ -112,7 +113,9 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             else:
                 stats["failed"] += 1
             if input_token: stats["sum_input_tokens"] += input_token
+            if cached_token: stats["sum_cached_tokens"] += cached_token
             if output_token: stats["sum_output_tokens"] += output_token
+            if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
             stats["sum_latency_ms"] += latency_ms
    
     except Exception as e:
@@ -194,7 +197,9 @@ def main(args):
         "succeeded": 0,
         "failed": 0,
         "sum_input_tokens": 0,
+        "sum_cached_tokens": 0,
         "sum_output_tokens": 0,
+        "sum_reasoning_tokens": 0,
         "sum_latency_ms": 0
     }
 
@@ -218,11 +223,15 @@ def main(args):
         wandb.summary["files_succeeded"] = stats["succeeded"]
         wandb.summary["files_failed"] = stats["failed"]
         wandb.summary["sum_input_tokens"] = stats["sum_input_tokens"]
+        wandb.summary["sum_cached_tokens"] = stats["sum_cached_tokens"]
         wandb.summary["sum_output_tokens"] = stats["sum_output_tokens"]
+        wandb.summary["sum_reasoning_tokens"] = stats["sum_reasoning_tokens"]
         wandb.summary["total_latency_ms"] = stats["sum_latency_ms"]
         if stats["processed"]:
             wandb.summary["avg_input_tokens"] = round(stats["sum_input_tokens"]  / stats["processed"], 2)
+            wandb.summary["avg_cached_tokens"] = round(stats["sum_cached_tokens"]  / stats["processed"], 2)
             wandb.summary["avg_output_tokens"] = round(stats["sum_output_tokens"] / stats["processed"], 2)
+            wandb.summary["avg_reasoning_tokens"] = round(stats["sum_reasoning_tokens"] / stats["processed"], 2)
             wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
         wandb.finish()
 
