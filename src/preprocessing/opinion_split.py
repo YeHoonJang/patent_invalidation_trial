@@ -1,13 +1,16 @@
 import argparse
 import asyncio
+import atexit
 import glob
 import json
 import os
 import re
 import sys
+import signal
 import pdb
 from pathlib import Path
 import time
+import wandb
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -22,7 +25,7 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
 
 
-async def split_opinion(path, system_prompt, base_prompt, client, output_dir, model):
+async def split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock):
     data = json.loads(path.read_text(encoding="utf-8"))
     statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
     analysis_text = data["main_body_text"]["ANALYSIS"]["text"].strip()
@@ -37,30 +40,64 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
         "user": full_prompt
     }
     
-    if model == "gpt" or model == "gpt-o":
-        mod = await client.client.moderations.create(input=full_prompt)
-        if mod.results[0].flagged:
-            print(f"[BLOCKED] {path.name}")
-            (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
-            return
-    
-    response = await client.generate_valid_json(prompt)
+    t0 = time.perf_counter()
 
-    output_path = output_dir/f"{model}_{os.path.basename(path)}"
-    output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
+    try:
+        if "gpt" in model:
+            mod = await client.client.moderations.create(input=full_prompt)
+            if mod.results[0].flagged:
+                print(f"[BLOCKED] {path.name}")
+                (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
+                return
+        
+        if "gemini" in model:
+            response, input_token, candidates_token, thought_token = await client.generate_valid_json(prompt)
+
+        else:
+            response = await client.generate_valid_json(prompt)
+        
+        latency_ms = round((time.perf_counter() - t0) * 1000)
+        output_token = candidates_token + thought_token
+
+        output_path = output_dir/f"{model}_{path.name}"
+        output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
+
+        wandb.log({
+            "name": path.name,
+            "status": "ok",
+            "input_tokens": input_token if input_token is not None else -1,
+            "output_token": output_token if output_token is not None else -1,
+            "latency_ms": latency_ms
+        })
+
+        async with lock:
+            stats["processed"] += 1
+            stats["succeeded"] += 1
+            if input_token: stats["sum_input_tokens"] += input_token
+            if output_token: stats["sum_output_tokens"] += output_token
+            stats["sum_latency_ms"] += latency_ms
+
+    except Exception as e:
+        latency_ms = round((time.perf_counter() - t0) * 1000)
+        wandb.log({
+            "name": path.name,
+            "status": f"error:{type(e).__name__}",
+            "latency_ms": latency_ms
+        })
+
+        async with lock:
+            stats["processed"] += 1
+            stats["failed"] += 1
+            stats["sum_latency_ms"] += latency_ms
 
 
 def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
 
-    prompt_dir_name = config["prompt"]["prompt_dir"]
-    system_prompt_file = config["prompt"]["system"]
-    user_prompt_file = config["prompt"][args.prompt]
-
-    prompt_dir = root_path / prompt_dir_name
-    system_prompt_path = prompt_dir / system_prompt_file
-    user_prompt_path = prompt_dir / user_prompt_file
+    prompt_dir = root_path /config["prompt"]["prompt_dir"]
+    system_prompt_path = prompt_dir / config["prompt"]["system"]
+    user_prompt_path = prompt_dir / config["prompt"][args.prompt]
 
     with open(system_prompt_path, "r") as f:
         system_prompt = f.read()
@@ -79,7 +116,6 @@ def main(args):
         api_key = os.getenv("GOOGLE_API_KEY")
     else:
         raise ValueError(f"Unsupported model: {model}")
-    
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
     
@@ -92,13 +128,76 @@ def main(args):
     
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{model}_{p.name}").exists()]
+
+    run_name = f"opinion_split_{config[model]["llm_params"]["model"]}_{args.prompt}"
+    wandb.init(entity=args.wandb_entity, project=args.wandb_project, name=run_name, config={
+        "task": "opinion_split",
+        "model_alias": model,
+        "provider_model": config[model]["llm_params"]["model"],
+        "prompt_name": args.prompt,
+        "concurrency": config["async"]["concurrency"],
+        "num_files": len(files),
+    })
+
+    t_run0 = time.perf_counter()
+    stats = {
+        "processed": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "sum_input_tokens": 0,
+        "sum_output_tokens": 0,
+        "sum_latency_ms": 0
+    }
+
+    FINALIZED = False
+    EXIT_REASON = "completed"
+    
+    def finalize():
+        nonlocal FINALIZED, EXIT_REASON
+        if FINALIZED:
+            return
+        FINALIZED = True
+
+        if wandb.run is None:
+            return
+        
+        elapsed_s = round(time.perf_counter() - t_run0, 3)
+
+        wandb.summary["run_status"] = EXIT_REASON
+        wandb.summary["run_elapsed_s"] = elapsed_s
+        wandb.summary["files_processed"] = stats["processed"]
+        wandb.summary["files_succeeded"] = stats["succeeded"]
+        wandb.summary["files_failed"] = stats["failed"]
+        wandb.summary["sum_input_tokens"] = stats["sum_input_tokens"]
+        wandb.summary["sum_output_tokens"] = stats["sum_output_tokens"]
+        wandb.summary["total_latency_ms"] = stats["sum_latency_ms"]
+        if stats["processed"]:
+            wandb.summary["avg_input_tokens"] = round(stats["sum_input_tokens"]  / stats["processed"], 2)
+            wandb.summary["avg_output_tokens"] = round(stats["sum_output_tokens"] / stats["processed"], 2)
+            wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
+        wandb.finish()
+
+    def handle_sig(sig, frame):
+        nonlocal EXIT_REASON
+        EXIT_REASON = f"signal:{sig.name}"
+        finalize()
+        sys.exit(0)
+
+    for s in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(s, handle_sig)
+
     sem = asyncio.Semaphore(config["async"]["concurrency"])
+    lock = asyncio.Lock()
     
     async def sem_task(path):
         async with sem:
-            await split_opinion(path, system_prompt, base_prompt, client, output_dir, model)
+            await split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
 
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Splitting Opinion ..."))
+
+    EXIT_REASON = "completed"
+    finalize()
+    return
 
 
 if __name__ == "__main__":
@@ -107,6 +206,9 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=False, default="config/opinion_split.json", help="Path of configuration file (e.g., opinion_split.json)")
     parser.add_argument("--model", choices=["gpt", "gpt-o", "gpt-5", "claude", "gemini"], required=False, default="gpt", help="LLM Model for spliting opinion")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
+    parser.add_argument("--wandb_entity", default="patent_project")
+    parser.add_argument("--wandb_project", default="opinion_split")
+    parser.add_argument("--run_name", default=None)
 
     args = parser.parse_args()
 
