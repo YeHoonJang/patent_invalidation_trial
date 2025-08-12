@@ -82,8 +82,7 @@ class QwenClient:
         retry_count = 0
         while True:
             try:
-                content, input_token, cached_token, output_token, reasoning_token = await self._call(prompt)
-                return content, input_token, cached_token, output_token, reasoning_token
+                return await self._call(prompt)
             except Exception as e:
                 retry_count += 1
 

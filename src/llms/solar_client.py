@@ -70,6 +70,7 @@ class SolarClient:
 
                 tool_calls = response.choices[0].message.tool_calls
                 result = tool_calls[0].function.arguments
+
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
 

@@ -54,7 +54,6 @@ class MistralClient:
                                       pad_token_id=self.tokenizer.eos_token_id)
 
         generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
-
         content = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
         parts = content.split("\n\n", 1)

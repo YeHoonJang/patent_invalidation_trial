@@ -66,11 +66,11 @@ class DeepSeekClient:
             generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
             output = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
-
             ## Calculate Tokens
             input_token = int(inputs["attention_mask"][0].sum().item())
             reasoning_token, cached_token = 0, 0
             output_token = len(generated_tokens)
+
             return output, input_token, cached_token, output_token, reasoning_token
 
     async def generate_valid_json(self, prompt: str) -> dict:

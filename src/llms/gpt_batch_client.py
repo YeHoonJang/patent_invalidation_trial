@@ -6,8 +6,6 @@ import time
 
 from openai import OpenAI
 from jsonschema import ValidationError, validate
-import logging
-
 
 class GPTBatchClient:
     def __init__(self, api_key: str, model: str, window: str, functions: list, function_call: dict, temperature: float | None = None):

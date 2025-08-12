@@ -69,17 +69,14 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
     for p in files:
         result_json = validated.get(p.stem)
 
-        if result_json is not None:
-            analysis_text = (
-                result_json.get("main_body_text", {})
-                .get("ANALYSIS", {})
-                .get("text", "")
-            )
+        analysis_text = (
+            result_json.get("main_body_text", {})
+               .get("ANALYSIS", {})
+               .get("text", "")
+        )
 
         if analysis_text:
             (output_dir / p.name).write_text(json.dumps(result_json, indent=2), "utf-8")
-        else:
-            (output_dir / f"{p.stem}.skip").write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def main(args):
     ### Init
@@ -113,9 +110,8 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_files = input_dir.glob("*.json")
-    skip_set = {p.stem for p in output_dir.glob("*.skip")}
-    files = [p for p in all_files if not (output_dir / p.name).exists() and p.stem not in skip_set]
-    print(len(files))
+    files = [p for p in all_files if not (output_dir / p.name).exists()]
+
     llm_params = config[model]["llm_params"]
 
     mode = args.mode.lower()
