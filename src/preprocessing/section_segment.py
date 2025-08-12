@@ -46,41 +46,38 @@ async def process_file(path, system_prompt, base_prompt, output_dir, client):
         output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_path: Path, client) -> None:
-    # lines = []
-    # for p in files:
-    #     data   = json.loads(p.read_text(encoding="utf-8"))
-    #     full_prompt = base_prompt.format(data=data)
+    lines = []
+    for p in files:
+        data   = json.loads(p.read_text(encoding="utf-8"))
+        full_prompt = base_prompt.format(data=data)
 
-    #     prompt = {
-    #         "system": system_prompt,
-    #         "user": full_prompt
-    #     }
-    #     lines.append(
-    #         client.make_request_line(prompt=prompt, custom_id=p.stem)
-    #     )
+        prompt = {
+            "system": system_prompt,
+            "user": full_prompt
+        }
+        lines.append(
+            client.make_request_line(prompt=prompt, custom_id=p.stem)
+        )
 
-    # batch_path.write_text(
-    #     "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
-    #     encoding="utf-8"
-    # )
-    # print(f"Created batch file {batch_path.name} with {len(lines)} requests")
-    batch_path = ""
+    batch_path.write_text(
+        "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
+        encoding="utf-8"
+    )
+    print(f"Created batch file {batch_path.name} with {len(lines)} requests")
+
     validated = client.generate_valid_json(batch_path)  # ↦ {custom_id: result}
 
     for p in files:
         result_json = validated.get(p.stem)
 
-        if result_json is not None:
-            analysis_text = (
-                result_json.get("main_body_text", {})
-                .get("ANALYSIS", {})
-                .get("text", "")
-            )
+        analysis_text = (
+            result_json.get("main_body_text", {})
+               .get("ANALYSIS", {})
+               .get("text", "")
+        )
 
         if analysis_text:
             (output_dir / p.name).write_text(json.dumps(result_json, indent=2), "utf-8")
-        else:
-            (output_dir / f"{p.stem}.skip").write_text(json.dumps(result_json, indent=2), encoding="utf-8")
 
 def main(args):
     ### Init
@@ -114,9 +111,8 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_files = input_dir.glob("*.json")
-    skip_set = {p.stem for p in output_dir.glob("*.skip")}
-    files = [p for p in all_files if not (output_dir / p.name).exists() and p.stem not in skip_set]
-    print(len(files))
+    files = [p for p in all_files if not (output_dir / p.name).exists()]
+
     llm_params = config[model]["llm_params"]
 
     mode = args.mode.lower()
@@ -145,7 +141,7 @@ def main(args):
 
         asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
     elif mode == "batch":
-        batch_process_file(files[:100], system_prompt, base_prompt, output_dir, batch_path, client)
+        batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path, client)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

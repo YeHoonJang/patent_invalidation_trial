@@ -11,7 +11,6 @@ from pathlib import Path
 import time
 import re
 import wandb
-import ast
 
 from dotenv import load_dotenv
 from tqdm.asyncio import tqdm_asyncio
@@ -52,18 +51,22 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
 
         # get input/output tokens
         response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
+
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
         result = {}
         json_result = None
+
         if model in ["llama", "qwen", "mistral", "t5", "deepseek"]:
-            if response.strip().isdigit():
-                result = {"decision_type": int(response)}
-            elif isinstance(response, str):
-                cleaned = re.sub(r'^```(?:json)?\s*|\s*```$', '', response.strip())
-                result = json.loads(cleaned)
-            elif isinstance(response, dict):
+            try:
                 result = json.loads(response)
+            except json.JSONDecodeError:
+                cleaned = re.sub(r"^```json\s*|\s*```$", "", response.strip())
+                try:
+                    result = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    if response.strip().isdigit():
+                        result = {"decision_type": int(response.strip())}
         else:
             result = response
 
@@ -76,7 +79,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         if json_result:
             output_path = output_dir/f"{os.path.basename(path)}"
             output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
-
+        
 
         wandb.log({
             "name": path.name,
@@ -99,7 +102,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             if output_token: stats["sum_output_tokens"] += output_token
             if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
             stats["sum_latency_ms"] += latency_ms
-
+   
     except Exception as e:
         latency_ms = round((time.perf_counter() - t0) * 1000)
         wandb.log({
@@ -165,7 +168,7 @@ def main(args):
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
 
-    run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
+    run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
 
     run_id_path = root_path / config["path"]["wandb_run_id"] / f"{run_name}.txt"
     run_id_path.parent.mkdir(parents=True, exist_ok=True)
@@ -177,8 +180,8 @@ def main(args):
         run_id_path.write_text(run_id)
 
     run = wandb.init(
-        entity=args.wandb_entity,
-        project=args.wandb_project,
+        entity=args.wandb_entity, 
+        project=args.wandb_project, 
         id=run_id,
         resume="allow",
         name=run_name,
@@ -191,7 +194,7 @@ def main(args):
             "num_files": len(files),
             }
         )
-
+    
     if run.resumed:
         print(f"[W&B] Resumed existing run: {run.id}")
     else:
@@ -211,7 +214,7 @@ def main(args):
 
     FINALIZED = False
     EXIT_REASON = "completed"
-
+    
     def finalize(*, end_run):
         nonlocal FINALIZED, EXIT_REASON
         if FINALIZED:
@@ -220,7 +223,7 @@ def main(args):
 
         if wandb.run is None:
             return
-
+        
         elapsed_s = round(time.perf_counter() - t_run0, 3)
 
         wandb.summary["run_status"] = EXIT_REASON
@@ -239,7 +242,7 @@ def main(args):
             wandb.summary["avg_output_tokens"] = round(stats["sum_output_tokens"] / stats["processed"], 2)
             wandb.summary["avg_reasoning_tokens"] = round(stats["sum_reasoning_tokens"] / stats["processed"], 2)
             wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
-
+        
         if end_run:
             wandb.finish()
 

@@ -70,14 +70,10 @@ class SolarClient:
 
                 tool_calls = response.choices[0].message.tool_calls
                 result = tool_calls[0].function.arguments
+
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
-
-                input_token = getattr(getattr(response, "usage", None), "prompt_tokens", 0)
-                cached_token = getattr(getattr(getattr(response, "usage", None), "prompt_tokens_details", None), "cached_tokens", 0)
-                output_token = getattr(getattr(response, "usage", None), "completion_tokens", 0)
-                reasoning_token = getattr(getattr(getattr(response, "usage", None), "completion_tokens_details", None), "reasoning_tokens", 0)
-                return valid_result, input_token, cached_token, output_token, reasoning_token
+                return valid_result
 
             except (RateLimitError, ValidationError) as e:
                 retry_count += 1
