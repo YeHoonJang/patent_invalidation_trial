@@ -62,15 +62,21 @@ class T5Client:
                 add_generation_prompt=True
             ).to(self.model.device)
 
-        response = self.model.generate(**input_ids, max_new_tokens=100)
-        return self.tokenizer.decode(response[0], skip_special_tokens=True)
+        generated_tokens = self.model.generate(**input_ids, max_new_tokens=100)
+        response = self.tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
+
+        ## Calculate Tokens
+        input_token = int(input_ids["attention_mask"][0].sum().item())
+        reasoning_token, cached_token = 0, 0
+        output_token = len(generated_tokens[0])
+
+        return response, input_token, cached_token, output_token, reasoning_token
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0
         while True:
             try:
-                response = await self._call(prompt)
-                return response
+                return await self._call(prompt)
             except Exception as e:
                 retry_count += 1
 
