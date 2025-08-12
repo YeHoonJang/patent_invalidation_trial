@@ -129,7 +129,7 @@ def main(args):
     client = get_llm_client(model, api_key, **llm_params)
     
     all_files = sorted(input_dir.glob("*.json"))
-    files = [p for p in all_files if not (output_dir / f"{model}_{p.name}").exists()]
+    files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
     
     run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
 
