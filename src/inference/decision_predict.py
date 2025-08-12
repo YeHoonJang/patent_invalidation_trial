@@ -240,8 +240,9 @@ def main(args):
             wandb.summary["avg_reasoning_tokens"] = round(stats["sum_reasoning_tokens"] / stats["processed"], 2)
             wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
 
-        if end_run:
-            wandb.finish()
+        # Opinion Split 이 다 완료 될 때만 주석 풀기
+        # if end_run:
+        #     wandb.finish()
 
     def handle_sig(sig, frame):
         nonlocal EXIT_REASON
