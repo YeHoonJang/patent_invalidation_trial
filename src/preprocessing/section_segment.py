@@ -64,7 +64,6 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
         encoding="utf-8"
     )
     print(f"Created batch file {batch_path.name} with {len(lines)} requests")
-
     validated = client.generate_valid_json(batch_path)  # ↦ {custom_id: result}
 
     for p in files:
