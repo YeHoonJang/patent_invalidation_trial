@@ -69,20 +69,14 @@ class QwenClient:
 
         thinking_content = self.tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
         content = self.tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
-
-        ### Calculate Tokens
-        output_token = len(output_ids[index:])
-        reasoning_token = len(output_ids[:index])
-        cached_token = 0
-        input_token = int(inputs["attention_mask"][0].sum().item())
-        return content, input_token, cached_token, output_token, reasoning_token
+        return thinking_content, content
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0
         while True:
             try:
-                content, input_token, cached_token, output_token, reasoning_token = await self._call(prompt)
-                return content, input_token, cached_token, output_token, reasoning_token
+                reasoning, response = await self._call(prompt)
+                return response
             except Exception as e:
                 retry_count += 1
 
