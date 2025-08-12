@@ -2,10 +2,11 @@
     "path":{
         "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
-        "input_dir": "data/json/opinion_split/output_sample/opinion_only/o3-2025-04-16",
-        "output_dir": "data/json/decision_predict/output_sample",
+        "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
+        "output_dir": "data/json/decision_predict/output",
         "log_dir": "log",
-        "issue_type": "data/json/issue_type.json"
+        "issue_type": "data/json/issue_type.json",
+        "wandb_run_id": "data/wandb_run_id"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
@@ -27,7 +28,8 @@
                         "type": "object",
                         "properties": {
                             "issue_type": {
-                                "type": "integer"
+                                "type": "array",
+                                "items": {"type": "string"}
                         }
                     },
                     "required": ["issue_type"]
@@ -49,7 +51,8 @@
                         "type": "object",
                         "properties": {
                             "issue_type": {
-                                "type": "integer"
+                                "type": "array",
+                                "items": {"type": "string"}
                         }
                     },
                     "required": ["issue_type"]
@@ -73,7 +76,8 @@
                         "type": "object",
                         "properties": {
                             "issue_type": {
-                                "type": "integer"
+                                "type": "array",
+                                "items": {"type": "string"}
                             }
                         },
                         "required": ["issue_type"]
@@ -90,11 +94,79 @@
                 "type": "object",
                 "properties": {
                     "issue_type": {
-                        "type": "integer"
+                        "type": "array",
+                        "items": {"type": "string"}
                     }
                 },
                 "required": ["issue_type"]
             } 
+        }
+    },
+    "llama": {
+        "llm_params": {
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "device_map": "auto",
+            "torch_dtype": "float16"
+        }
+    },
+    "qwen": {
+        "llm_params": {
+            "model": "Qwen/Qwen3-8B",
+            "device_map": "auto",
+            "torch_dtype": "float16"
+        }
+    },
+    "solar": {
+        "llm_params": {
+            "model": "solar-pro2",
+            "reasoning_effort": "high",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "predict_issue_type",
+                        "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "issue_type": {
+                                    "type": "array",
+                                    "items": {"type": "string"}
+                            }
+                            }
+                        },
+                        "required": [
+                            "issue_type"
+                        ]
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "predict_issue_type"
+                }
+            }
+        }
+    },
+    "mistral": {
+        "llm_params": {
+            "model": "mistralai/Mistral-7B-Instruct-v0.3",
+            "device_map": "auto",
+            "torch_dtype": "float16"
+        }
+    },
+    "deepseek": {
+        "llm_params": {
+            "model": "deepseek-ai/deepseek-llm-7b-chat",
+            "torch_dtype": "bfloat16"
+        }
+    },
+    "t5": {
+        "llm_params": {
+            "model": "google/t5gemma-2b-2b-ul2-it",
+            "torch_dtype": "bfloat16"
         }
     }
 }
