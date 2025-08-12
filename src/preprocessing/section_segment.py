@@ -69,11 +69,14 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
     for p in files:
         result_json = validated.get(p.stem)
 
-        analysis_text = (
-            result_json.get("main_body_text", {})
-               .get("ANALYSIS", {})
-               .get("text", "")
-        )
+        if result_json:
+            analysis_text = (
+                result_json.get("main_body_text", {})
+                .get("ANALYSIS", {})
+                .get("text", "")
+            )
+        else:
+            analysis_text = ""
 
         if analysis_text:
             (output_dir / p.name).write_text(json.dumps(result_json, indent=2), "utf-8")
