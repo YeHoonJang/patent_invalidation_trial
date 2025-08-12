@@ -65,16 +65,16 @@ class GPTBatchClient:
         return result
 
     def generate_valid_json(self, batch_path):
-        # batch_input_files = self.client.files.create(
-        #     file=open(batch_path, "rb"),
-        #     purpose="batch"
-        # )
+        batch_input_files = self.client.files.create(
+            file=open(batch_path, "rb"),
+            purpose="batch"
+        )
 
-        # res = self._call(batch_input_files)
-        # print(f"[Batch] created id={res.id}")
+        res = self._call(batch_input_files)
+        print(f"[Batch] created id={res.id}")
 
         while True:
-            info = self.client.batches.retrieve("batch_689aa912b84c8190baeb6f3a8b14f87d")
+            info = self.client.batches.retrieve(res.id)
             status = info.status
 
             rc = info.request_counts
@@ -86,13 +86,13 @@ class GPTBatchClient:
             if status == "expired":
                 if not info.output_file_id:
                     raise RuntimeError(
-                        f"[Batch] batch_689aa912b84c8190baeb6f3a8b14f87d expired but no output_file_id was provided; "
+                        f"[Batch] {res.id} expired but no output_file_id was provided; "
                         "the batch produced no downloadable result."
                     )
                 break
 
             if status in ("failed", "cancelled"):
-                raise RuntimeError(f"[Batch] batch_689aa912b84c8190baeb6f3a8b14f87d ended with status={status}")
+                raise RuntimeError(f"[Batch] {res.id} ended with status={status}")
             time.sleep(5)
 
         if info.output_file_id:
