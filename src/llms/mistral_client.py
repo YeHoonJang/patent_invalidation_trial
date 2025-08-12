@@ -54,19 +54,24 @@ class MistralClient:
                                       pad_token_id=self.tokenizer.eos_token_id)
 
         generated_tokens = response[0][inputs["input_ids"].shape[-1]:]
+
         content = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
         parts = content.split("\n\n", 1)
         answer = parts[0].strip()
         explanation = parts[1].strip() if len(parts) > 1 else None
-        return answer, explanation
+
+        ## Calculate Tokens
+        input_token = int(inputs["attention_mask"][0].sum().item())
+        reasoning_token, cached_token = 0, 0
+        output_token = len(generated_tokens)
+        return answer, input_token, cached_token, output_token, reasoning_token
 
     async def generate_valid_json(self, prompt: str) -> dict:
         retry_count = 0
         while True:
             try:
-                response, reasoning = await self._call(prompt)
-                return response
+                return await self._call(prompt)
             except Exception as e:
                 retry_count += 1
 
