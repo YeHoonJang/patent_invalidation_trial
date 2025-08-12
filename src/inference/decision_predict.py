@@ -38,8 +38,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         "system": system_prompt,
         "user": full_prompt
     }
-
-    pdb.set_trace()
+    
     t0 = time.perf_counter()
 
     try:
@@ -57,9 +56,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         result = {}
         json_result = None
         if model in ["llama", "qwen", "mistral", "t5", "deepseek"]:
-            if response.strip().isdigit():
-                result = {"decision_type": int(response)}
-            elif isinstance(response, str):
+            if isinstance(response, str):
                 cleaned = re.sub(r'^```(?:json)?\s*|\s*```$', '', response.strip())
                 result = json.loads(cleaned)
             elif isinstance(response, dict):
@@ -67,9 +64,12 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         else:
             result = response
 
-        if isinstance(result, dict) and "decision_type" in result.keys():
+        if isinstance(result, dict) and "decision_type" in result.keys() and "decision_number" in result.keys():
             try:
-                json_result = {"decision_type": int(result["decision_type"])}
+                json_result = {
+                    "decision_type": str(result["decision_type"]),
+                    "decision_number": int(result["decision_number"])
+                }
             except (ValueError, TypeError):
                 pass
 

@@ -29,11 +29,14 @@
                         "type": "object",
                         "properties": {
                             "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
                                 "type": "integer"
                             }
                         },
                         "required": [
-                            "decision_type"
+                            "decision_type", "decision_number"
                         ]
                     }
                 }
@@ -55,11 +58,14 @@
                         "type": "object",
                         "properties": {
                             "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
                                 "type": "integer"
                             }
                         },
                         "required": [
-                            "decision_type"
+                            "decision_type", "decision_number"
                         ]
                     }
                 }
@@ -83,11 +89,14 @@
                         "type": "object",
                         "properties": {
                             "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
                                 "type": "integer"
                             }
                         },
                         "required": [
-                            "decision_type"
+                            "decision_type", "decision_number"
                         ]
                     }
                 }
@@ -102,11 +111,14 @@
                 "type": "object",
                 "properties": {
                     "decision_type": {
+                        "type": "string"
+                    },
+                    "decision_number": {
                         "type": "integer"
                     }
                 },
                 "required": [
-                    "decision_type"
+                    "decision_type", "decision_number"
                 ]
             }
         }
@@ -140,12 +152,15 @@
                             "type": "object",
                             "properties": {
                                 "decision_type": {
+                                    "type": "string"
+                                },
+                                "decision_number": {
                                     "type": "integer"
                                 }
                             }
                         },
                         "required": [
-                            "decision_type"
+                            "decision_type", "decision_number"
                         ]
                     }
                 }
