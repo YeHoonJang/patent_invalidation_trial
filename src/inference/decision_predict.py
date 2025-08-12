@@ -38,7 +38,7 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         "system": system_prompt,
         "user": full_prompt
     }
-    
+
     pdb.set_trace()
     t0 = time.perf_counter()
 
@@ -52,12 +52,10 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
 
         # get input/output tokens
         response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
-
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
         result = {}
         json_result = None
-
         if model in ["llama", "qwen", "mistral", "t5", "deepseek"]:
             if response.strip().isdigit():
                 result = {"decision_type": int(response)}

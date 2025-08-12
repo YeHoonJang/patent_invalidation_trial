@@ -1,1 +1,1 @@
-python /home/yehoon/workspace/patent_invalidation_trial/src/inference/decision_predict.py --config "/home/yehoon/workspace/patent_invalidation_trial/config/decision_predict.json" --inference_model "claude" --prompt "subdecision_type" --wandb_entity "patent_project" --wandb_project "test"
+python /home/yehoon/workspace/patent_invalidation_trial/src/inference/decision_predict.py --config "/home/yehoon/workspace/patent_invalidation_trial/config/decision_predict.json" --inference_model "gpt" --prompt "subdecision_type" --wandb_entity "patent_project" --wandb_project "test"

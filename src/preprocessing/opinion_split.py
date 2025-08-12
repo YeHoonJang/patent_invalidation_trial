@@ -55,7 +55,7 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
         
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
-        output_path = output_dir/f"{model}_{path.name}"
+        output_path = output_dir/f"{path.name}"
         output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
 
         wandb.log({
