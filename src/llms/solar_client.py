@@ -77,6 +77,7 @@ class SolarClient:
                 cached_token = getattr(getattr(getattr(response, "usage", None), "prompt_tokens_details", None), "cached_tokens", 0)
                 output_token = getattr(getattr(response, "usage", None), "completion_tokens", 0)
                 reasoning_token = getattr(getattr(getattr(response, "usage", None), "completion_tokens_details", None), "reasoning_tokens", 0)
+
                 return valid_result, input_token, cached_token, output_token, reasoning_token
 
             except (RateLimitError, ValidationError) as e:

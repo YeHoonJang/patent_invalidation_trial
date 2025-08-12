@@ -65,6 +65,7 @@ class MistralClient:
         input_token = int(inputs["attention_mask"][0].sum().item())
         reasoning_token, cached_token = 0, 0
         output_token = len(generated_tokens)
+
         return answer, input_token, cached_token, output_token, reasoning_token
 
     async def generate_valid_json(self, prompt: str) -> dict:

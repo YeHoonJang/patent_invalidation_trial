@@ -75,6 +75,7 @@ class QwenClient:
         reasoning_token = len(output_ids[:index])
         cached_token = 0
         input_token = int(inputs["attention_mask"][0].sum().item())
+
         return content, input_token, cached_token, output_token, reasoning_token
 
     async def generate_valid_json(self, prompt: str) -> dict:
