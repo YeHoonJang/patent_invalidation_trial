@@ -38,7 +38,8 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
         "system": system_prompt,
         "user": full_prompt
     }
-
+    
+    pdb.set_trace()
     t0 = time.perf_counter()
 
     try:
