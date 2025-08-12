@@ -5,7 +5,8 @@
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
         "log_dir": "log",
-        "decision_type": "data/json/coarse_decision_type.json"
+        "decision_type": "data/json/decision_type.json",
+        "wandb_run_id": "data/wandb_run_id"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",

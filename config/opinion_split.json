@@ -4,7 +4,8 @@
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/input",
         "output_dir": "data/json/opinion_split/output",
-        "log_dir": "log"
+        "log_dir": "log",
+        "wandb_run_id": "data/wandb_run_id"
     },    
     "prompt": {
         "prompt_dir": "data/prompt/opinion_split",
@@ -14,7 +15,7 @@
         "version_3": "version_3.txt"
     },
     "async": {
-        "concurrency": 5
+        "concurrency": 3
     },
     "gpt": {
         "llm_params":{

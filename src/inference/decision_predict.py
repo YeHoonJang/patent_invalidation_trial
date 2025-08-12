@@ -111,6 +111,8 @@ async def predict_subdecision(path, system_prompt, base_prompt, client, labels, 
             "latency_ms": latency_ms
         })
 
+        print(f"[ERROR] {path.name}: {type(e).__name__}: {e}")
+
         async with lock:
             stats["processed"] += 1
             stats["failed"] += 1
@@ -166,15 +168,37 @@ def main(args):
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
 
-    run_name = f"decision_predict_{config[model]["llm_params"]["model"]}_{args.prompt}"
-    wandb.init(entity=args.wandb_entity, project=args.wandb_project, name=run_name, config={
-        "task": "decision_predict",
-        "model_alias": model,
-        "provider_model": config[model]["llm_params"]["model"],
-        "prompt_name": args.prompt,
-        "concurrency": config["async"]["concurrency"],
-        "num_files": len(files),
-    })
+    run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
+
+    run_id_path = root_path / config["path"]["wandb_run_id"] / f"{run_name}.txt"
+    run_id_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if run_id_path.exists():
+        run_id = run_id_path.read_text().strip()
+    else:
+        run_id = wandb.util.generate_id()
+        run_id_path.write_text(run_id)
+
+    run = wandb.init(
+        entity=args.wandb_entity, 
+        project=args.wandb_project, 
+        id=run_id,
+        resume="allow",
+        name=run_name,
+        config={
+            "task": "decision_predict",
+            "model_alias": model,
+            "provider_model": config[model]["llm_params"]["model"],
+            "prompt_name": args.prompt,
+            "concurrency": config["async"]["concurrency"],
+            "num_files": len(files),
+            }
+        )
+    
+    if run.resumed:
+        print(f"[W&B] Resumed existing run: {run.id}")
+    else:
+        print(f"[W&B] New run: {run.id}")
 
     t_run0 = time.perf_counter()
     stats = {
@@ -191,7 +215,7 @@ def main(args):
     FINALIZED = False
     EXIT_REASON = "completed"
     
-    def finalize():
+    def finalize(*, end_run):
         nonlocal FINALIZED, EXIT_REASON
         if FINALIZED:
             return
@@ -218,12 +242,14 @@ def main(args):
             wandb.summary["avg_output_tokens"] = round(stats["sum_output_tokens"] / stats["processed"], 2)
             wandb.summary["avg_reasoning_tokens"] = round(stats["sum_reasoning_tokens"] / stats["processed"], 2)
             wandb.summary["avg_latency_ms"] = round(stats["sum_latency_ms"] / stats["processed"], 2)
-        wandb.finish()
+        
+        if end_run:
+            wandb.finish()
 
     def handle_sig(sig, frame):
         nonlocal EXIT_REASON
         EXIT_REASON = f"signal:{sig.name}"
-        finalize()
+        finalize(end_run=False)
         sys.exit(0)
 
     for s in (signal.SIGINT, signal.SIGTERM):
@@ -240,8 +266,7 @@ def main(args):
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Subdecision ..."))
 
     EXIT_REASON = "completed"
-    finalize()
-    return
+    finalize(end_run=True)
 
 
 if __name__ == "__main__":
@@ -252,7 +277,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
     parser.add_argument("--wandb_entity", default="patent_project")
     parser.add_argument("--wandb_project", default="decision_predict")
-    parser.add_argument("--run_name", default=None)
+    parser.add_argument("--wandb_task", default="decision_predict")
 
 
     args = parser.parse_args()
