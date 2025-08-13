@@ -34,12 +34,12 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
         statement_of_the_case=statement_of_case_text,
         analysis=analysis_text
         )
-    
+
     prompt = {
         "system": system_prompt,
         "user": full_prompt
     }
-    
+
     t0 = time.perf_counter()
 
     try:
@@ -49,10 +49,10 @@ async def split_opinion(path, system_prompt, base_prompt, client, output_dir, mo
                 print(f"[BLOCKED] {path.name}")
                 (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
                 return
-        
+
         response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
-        
+
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
         output_path = output_dir/f"{path.name}"
@@ -120,18 +120,17 @@ def main(args):
         raise ValueError(f"Unsupported model: {model}")
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
-    
+
     input_dir = root_path / config["path"]["input_dir"]
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
     llm_params = config[model]["llm_params"]
     client = get_llm_client(model, api_key, **llm_params)
-    
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
-    
-    run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
+
+    run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
 
     run_id_path = root_path / config["path"]["wandb_run_id"] / f"{run_name}.txt"
     run_id_path.parent.mkdir(parents=True, exist_ok=True)
@@ -157,7 +156,7 @@ def main(args):
             "num_files": len(files),
             }
         )
-    
+
     if run.resumed:
         print(f"[W&B] Resumed existing run: {run.id}")
     else:
@@ -177,7 +176,7 @@ def main(args):
 
     FINALIZED = False
     EXIT_REASON = "completed"
-    
+
     def finalize(*, end_run):
         nonlocal FINALIZED, EXIT_REASON
         if FINALIZED:
@@ -186,7 +185,7 @@ def main(args):
 
         if wandb.run is None:
             return
-        
+
         elapsed_s = round(time.perf_counter() - t_run0, 3)
 
         wandb.summary["run_status"] = EXIT_REASON
@@ -219,12 +218,12 @@ def main(args):
 
     sem = asyncio.Semaphore(config["async"]["concurrency"])
     lock = asyncio.Lock()
-    
+
     async def sem_task(path):
         async with sem:
             await split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Splitting Opinion ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]['llm_params']['model']}] Splitting Opinion ..."))
 
     EXIT_REASON = "completed"
     finalize(end_run=True)
