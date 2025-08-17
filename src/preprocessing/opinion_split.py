@@ -27,8 +27,8 @@ from llms.llm_client import get_llm_client
 
 async def split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock):
     data = json.loads(path.read_text(encoding="utf-8"))
-    statement_of_case_text = data['main_body_text']['STATEMENT OF THE CASE']['text'].strip()
-    analysis_text = data['main_body_text']['ANALYSIS']['text'].strip()
+    statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
+    analysis_text = data["main_body_text"]["ANALYSIS"]["text"].strip()
 
     full_prompt = base_prompt.format(
         statement_of_the_case=statement_of_case_text,
@@ -131,7 +131,7 @@ def main(args):
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
     
-    run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
+    run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
 
     run_id_path = root_path / config["path"]["wandb_run_id"] / f"{run_name}.txt"
     run_id_path.parent.mkdir(parents=True, exist_ok=True)
@@ -224,7 +224,7 @@ def main(args):
         async with sem:
             await split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]['llm_params']['model']}] Splitting Opinion ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Splitting Opinion ..."))
 
     EXIT_REASON = "completed"
     finalize(end_run=True)

@@ -1,0 +1,10 @@
+{
+    "path": {
+        "root_path": "/home/chaewon/workspace/STUDY/PTAB",
+        "input_dir": "data/raw_data/uspto/zip",
+        "cleaned_ptab_dir": "data/cleaned/ptab",
+        "output_dir": "data/raw_data/uspto/xml",
+        "valid_identifier": "data/raw_data/ptab/metadata/20250623_ptab.json",
+        "prior_art_references": "data/information_extraction/metadata/information_extraction.json"
+    }
+}
