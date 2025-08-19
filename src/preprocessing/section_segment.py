@@ -137,10 +137,9 @@ def main(args):
             async with sem:
                 await process_file(path, system_prompt, base_prompt, output_dir, client)
 
-        asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in real_files], desc="(Async) Section Segment ..."))
+        asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="(Async) Section Segment ..."))
     elif mode == "batch":
-        len(real_files)
-        batch_process_file(real_files, system_prompt, base_prompt, output_dir, batch_path, client)
+        batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path, client)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
