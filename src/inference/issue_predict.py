@@ -22,16 +22,28 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client
 
 
-async def predict_issue_type(path, system_prompt, base_prompt, client, output_dir, model, stats, lock):
+async def predict_issue_type(args, path, system_prompt, base_prompt, client, output_dir, model, stats, lock):
 
     data = json.loads(path.read_text(encoding="utf-8"))
     appellant = data["appellant_arguments"]
     examiner = data["examiner_findings"]
 
-    full_prompt = base_prompt.format(
-        appellant=appellant,
-        examiner=examiner
-    )
+    if args.input_setting == "base":
+        full_prompt = base_prompt.format(
+            appellant=appellant,
+            examiner=examiner,
+        )
+    elif args.input_setting == "merge":
+        arguments = []
+        arguments.extend(appellant)
+        arguments.extend(examiner)
+        full_prompt = base_prompt.format(
+            arguments=arguments,
+        )
+    elif args.input_setting == "split-claim":
+        pass
+    elif args.input_setting == "claim-only":
+        pass
 
     prompt = {
         "system": system_prompt,
@@ -255,9 +267,9 @@ def main(args):
 
     async def sem_task(path):
         async with sem:
-            await predict_issue_type(path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
+            await predict_issue_type(args, path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
 
-    print(f"[Async] {config[model]['llm_params']['model']}")
+    print(f"[Async] {config[model]['llm_params']['model']}_{args.input_setting}")
     asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Issue Type ..."))
 
     EXIT_REASON = "completed"
@@ -273,6 +285,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_entity", default="patent_project")
     parser.add_argument("--wandb_project", default="issue_type_predict")
     parser.add_argument("--wandb_task", default="issue_type_predict")
+    parser.add_argument("--input_setting", type=str, required=True, choices=["base", "merge", "split-claim", "claim-only"], default="base", help="Input setting")
 
     args = parser.parse_args()
 
