@@ -32,18 +32,14 @@ async def process_file(path, system_prompt, base_prompt, output_dir, client):
         "user": full_prompt
     }
 
-    result_json = await client.generate_valid_json(prompt)
+    response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
     # Proceed only if the “ANALYSIS” section contains text
-    analysis_text = (
-        result_json.get("main_body_text", {})
-            .get("ANALYSIS", {})
-            .get("text", "")
-    )
+    analysis_text = (response.get("main_body_text", {}).get("ANALYSIS", {}).get("text", ""))
 
     if analysis_text:
         output_path = output_dir/f"{path.name}"
-        output_path.write_text(json.dumps(result_json, indent=2), encoding="utf-8")
+        output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
 
 def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_path: Path, client) -> None:
     lines = []
