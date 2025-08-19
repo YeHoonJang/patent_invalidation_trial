@@ -12,7 +12,9 @@
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
         "subdecision_type": "subdecision_type.txt",
-        "subdecision_type_coarse": "subdecision_type_coarse.txt"
+        "subdecision_type_coarse": "subdecision_type_coarse.txt",
+        "(merge)subdecision_type": "(merge)subdecision_type.txt",
+        "(merge)subdecision_type_coarse": "(merge)subdecision_type_coarse.txt"
     },
     "async": {
         "concurrency": 3

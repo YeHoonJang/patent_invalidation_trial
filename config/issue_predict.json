@@ -11,7 +11,8 @@
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
-        "issue_type": "issue_type.txt"
+        "issue_type": "issue_type.txt",
+        "(merge)issue_type": "(merge)issue_type.txt"
     },
     "async": {
         "concurrency": 3

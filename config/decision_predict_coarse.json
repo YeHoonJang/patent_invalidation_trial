@@ -5,14 +5,14 @@
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
         "log_dir": "log",
-        "decision_type": "data/json/board_ruling.json",
+        "decision_type": "data/json/coarse_decision_type.json",
         "wandb_run_id": "data/wandb_run_id"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
-        "board_ruling": "board_ruling.txt",
-        "(merge)board_ruling": "(merge)board_ruling.txt"
+        "subdecision_type": "subdecision_type.txt",
+        "subdecision_type_coarse": "subdecision_type_coarse.txt"
     },
     "async": {
         "concurrency": 3
@@ -23,22 +23,26 @@
             "temperature": 0.0,
             "functions": [
                 {
-                    "name": "predict_board_ruling",
-                    "description": "PTAB decision index as defined in Board Ruling Dictionary",
+                    "name": "predict_subdecision",
+                    "description": "PTAB decision index as defined in Decision Type Dictionary",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "board_ruling": {
-                                "type": "array",
-                                "items": {"type": "string"}
+                            "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
+                                "type": "integer"
                             }
                         },
-                    "required": ["board_ruling"]
+                        "required": [
+                            "decision_type", "decision_number"
+                        ]
                     }
                 }
             ],
             "function_call": {
-                "name": "predict_board_ruling"
+                "name": "predict_subdecision"
             }
         }
     },
@@ -48,22 +52,26 @@
             "temperature": 0,
             "functions": [
                 {
-                    "name": "predict_board_ruling",
-                    "description": "PTAB decision index as defined in Board Ruling Dictionary",
+                    "name": "predict_subdecision",
+                    "description": "PTAB decision index as defined in Decision Type Dictionary",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "board_ruling": {
-                                "type": "array",
-                                "items": {"type": "string"}
+                            "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
+                                "type": "integer"
                             }
                         },
-                    "required": ["board_ruling"]
+                        "required": [
+                            "decision_type", "decision_number"
+                        ]
                     }
                 }
             ],
             "function_call": {
-                "name": "predict_board_ruling"
+                "name": "predict_subdecision"
             }
         }
     },
@@ -75,17 +83,21 @@
             "timeout": 3600,
             "functions": [
                 {
-                    "name": "predict_board_ruling",
-                    "description": "PTAB decision index as defined in Board Ruling Dictionary",
+                    "name": "predict_subdecision",
+                    "description": "PTAB decision index as defined in Decision Type Dictionary",
                     "input_schema": {
                         "type": "object",
                         "properties": {
-                            "board_ruling": {
-                                "type": "array",
-                                "items": {"type": "string"}
+                            "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
+                                "type": "integer"
                             }
                         },
-                    "required": ["board_ruling"]
+                        "required": [
+                            "decision_type", "decision_number"
+                        ]
                     }
                 }
             ]
@@ -98,12 +110,16 @@
             "functions": {
                 "type": "object",
                 "properties": {
-                    "board_ruling": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        }
+                    "decision_type": {
+                        "type": "string"
                     },
-                "required": ["board_ruling"]
+                    "decision_number": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "decision_type", "decision_number"
+                ]
             }
         }
     },
@@ -130,25 +146,29 @@
                 {
                     "type": "function",
                     "function": {
-                        "name": "predict_board_ruling",
-                        "description": "PTAB decision index as defined in Board Ruling Dictionary",
+                        "name": "predict_subdecision",
+                        "description": "PTAB decision index as defined in Decision Type Dictionary",
                         "parameters": {
                             "type": "object",
                             "properties": {
-                                "board_ruling": {
-                                        "type": "array",
-                                    "items": {"type": "string"}
+                                "decision_type": {
+                                    "type": "string"
+                                },
+                                "decision_number": {
+                                    "type": "integer"
                                 }
                             }
                         },
-                        "required": ["board_ruling"]
+                        "required": [
+                            "decision_type", "decision_number"
+                        ]
                     }
                 }
             ],
             "function_call": {
                 "type": "function",
                 "function": {
-                    "name": "predict_board_ruling"
+                    "name": "predict_subdecision"
                 }
             }
         }
