@@ -348,7 +348,7 @@ def main(args):
         print(f"[Async] {config[model]['llm_params']['model']}_{args.input_setting}")
         asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Issue Type ..."))
     elif mode == "batch":
-        batch_process_file(files[:3], system_prompt, base_prompt, output_dir, client, stats)
+        batch_process_file(files, system_prompt, base_prompt, output_dir, client, stats)
 
     EXIT_REASON = "completed"
     finalize(end_run=True)
