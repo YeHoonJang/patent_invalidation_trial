@@ -73,8 +73,8 @@ gt_df = df_gt[["file_name", "issue_type"]].copy()
 gt_df.rename(columns={"issue_type": "issue_type_true"}, inplace=True)
 
 
-def evaluate_model(model_name: str, model_path: Path) -> dict | None:
-    out_dir = ROOT_PATH / DATA_PATH / "issue_type" / model_path
+def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dict | None:
+    out_dir = ROOT_PATH / DATA_PATH / input_setting / model_path
     files = sorted(out_dir.glob("*.json"))
     if not files:
         print(f"[INFO] {model_name}: no json files at {out_dir}")
@@ -146,30 +146,31 @@ def evaluate_model(model_name: str, model_path: Path) -> dict | None:
         "hamming_loss": hamming,
     }
 
+input_settings = ["issue_type", "(merge)issue_type"]
+for input_setting in input_settings:
+    results = []
+    for name, path in llm_dir.items():
+        res = evaluate_model(input_setting, name, path)
+        if res:
+            results.append(res)
 
-results = []
-for name, path in llm_dir.items():
-    res = evaluate_model(name, path)
-    if res:
-        results.append(res)
+    results_df = pd.DataFrame(results)
+    if not results_df.empty:
+        metric_cols = [
+            "exact_match",
+            "micro_precision", "micro_recall", "micro_f1",
+            "macro_precision", "macro_recall", "macro_f1",
+            "hamming_loss",
+            "coverage_vs_gt", "coverage_vs_pred",
+        ]
+        results_df[metric_cols] = results_df[metric_cols].applymap(lambda x: round(float(x), 4))
 
-results_df = pd.DataFrame(results)
-if not results_df.empty:
-    metric_cols = [
-        "exact_match",
-        "micro_precision", "micro_recall", "micro_f1",
-        "macro_precision", "macro_recall", "macro_f1",
-        "hamming_loss",
-        "coverage_vs_gt", "coverage_vs_pred",
-    ]
-    results_df[metric_cols] = results_df[metric_cols].applymap(lambda x: round(float(x), 4))
+        save_dir = ROOT_PATH / f"data/csv/evaluate_result/{input_setting}"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    save_dir = ROOT_PATH / "data/csv/evaluate_result/issue_type"
-    save_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_path = save_dir / f"issue_type_eval_{ts}.csv"
 
-    save_path = save_dir / f"issue_type_eval_{ts}.csv"
-
-    results_df.to_csv(save_path, index=False)
-else:
-    print("[INFO] No results to save (no models produced evaluable outputs).")
+        results_df.to_csv(save_path, index=False)
+    else:
+        print("[INFO] No results to save (no models produced evaluable outputs).")

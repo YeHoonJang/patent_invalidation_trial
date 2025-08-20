@@ -38,7 +38,7 @@ fine_l2i = {k: i for i, k in enumerate(fine_labels)}
 
 fine_sd_df["subdecision_coarse_true"] = fine_sd_df["subdecision_coarse"].map(fine_l2i)
 
-def evaluate_model(model_name: str, model_path: Path) -> dict | None:
+def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dict | None:
     output_path = ROOT_PATH / DATA_PATH / "subdecision_type_coarse" / model_path
     files = sorted(output_path.glob("*.json"))
     if not files:
@@ -107,26 +107,27 @@ def evaluate_model(model_name: str, model_path: Path) -> dict | None:
         "micro_f1": micro_f1,
         "weighted_f1": weighted_f1,
     }
+input_settings = ["subdecision_type_coarse", "(merge)subdecision_type_coarse"]
+for input_setting in input_settings:
+    results = []
+    for name, path in llm_dir.items():
+        res = evaluate_model(input_setting, name, path)
+        if res:
+            results.append(res)
 
-results = []
-for name, path in llm_dir.items():
-    res = evaluate_model(name, path)
-    if res:
-        results.append(res)
+    results_df = pd.DataFrame(results)
+    metric_cols = [
+        "accuracy", "balanced_acc",
+        "macro_precision", "macro_recall", "macro_f1",
+        "micro_f1", "weighted_f1",
+        "coverage_vs_gt", "coverage_vs_pred",
+    ]
+    results_df[metric_cols] = results_df[metric_cols].applymap(lambda x: round(float(x), 4))
 
-results_df = pd.DataFrame(results)
-metric_cols = [
-    "accuracy", "balanced_acc",
-    "macro_precision", "macro_recall", "macro_f1",
-    "micro_f1", "weighted_f1",
-    "coverage_vs_gt", "coverage_vs_pred",
-]
-results_df[metric_cols] = results_df[metric_cols].applymap(lambda x: round(float(x), 4))
+    save_dir = ROOT_PATH / f"data/csv/evaluate_result/{input_setting}"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_path = save_dir / f"subdecision_coarse_eval_{ts}.csv"
 
-save_dir = ROOT_PATH / "data/csv/evaluate_result/subdecision_coarse"
-save_dir.mkdir(parents=True, exist_ok=True)
-ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-save_path = save_dir / f"subdecision_coarse_eval_{ts}.csv"
-
-results_df.to_csv(save_path, index=False)
-print(f"[SAVED] {save_path}")
+    results_df.to_csv(save_path, index=False)
+    print(f"[SAVED] {save_path}")
