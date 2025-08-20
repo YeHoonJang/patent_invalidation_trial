@@ -51,7 +51,7 @@ async def predict_subdecision(args, path, system_prompt, base_prompt, client, la
         "system": system_prompt,
         "user": full_prompt
     }
-    
+
     t0 = time.perf_counter()
 
     try:
@@ -147,7 +147,7 @@ def main(args):
         base_prompt = f.read()
 
     load_dotenv(PROJECT_ROOT / "config" / ".env")
-    model = args.inference_model.lower()
+    model = args.model.lower()
 
     use_api = True
     api_key = None
@@ -283,7 +283,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
-    parser.add_argument("--inference_model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
     parser.add_argument("--wandb_entity", default="patent_project")
     parser.add_argument("--wandb_project", default="decision_predict")
