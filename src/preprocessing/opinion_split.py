@@ -27,70 +27,80 @@ from llms.llm_client import get_llm_client
 
 async def split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock):
     data = json.loads(path.read_text(encoding="utf-8"))
-    statement_of_case_text = data["main_body_text"]["STATEMENT OF THE CASE"]["text"].strip()
-    analysis_text = data["main_body_text"]["ANALYSIS"]["text"].strip()
 
-    full_prompt = base_prompt.format(
-        statement_of_the_case=statement_of_case_text,
-        analysis=analysis_text
-        )
-    
-    prompt = {
-        "system": system_prompt,
-        "user": full_prompt
-    }
-    
-    t0 = time.perf_counter()
+    statement_of_case_text = (
+        data.get("main_body_text", {})
+            .get("STATEMENT OF THE CASE", {})
+            .get("text", "")
+    ).strip()
+    analysis_text = (
+        data.get("main_body_text", {})
+            .get("ANALYSIS", {})
+            .get("text", "")
+    ).strip()
 
-    try:
-        if "gpt" in model:
-            mod = await client.client.moderations.create(input=full_prompt)
-            if mod.results[0].flagged:
-                print(f"[BLOCKED] {path.name}")
-                (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
-                return
-        
-        response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
+    if statement_of_case_text and analysis_text:
+        full_prompt = base_prompt.format(
+            statement_of_the_case=statement_of_case_text,
+            analysis=analysis_text
+            )
 
-        
-        latency_ms = round((time.perf_counter() - t0) * 1000)
+        prompt = {
+            "system": system_prompt,
+            "user": full_prompt
+        }
 
-        output_path = output_dir/f"{path.name}"
-        output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
+        t0 = time.perf_counter()
 
-        wandb.log({
-            "name": path.name,
-            "status": "ok",
-            "input_tokens": input_token if input_token is not None else -1,
-            "cached_tokens": cached_token if cached_token is not None else -1,
-            "output_token": output_token if output_token is not None else -1,
-            "reasoning_token": reasoning_token if reasoning_token is not None else -1,
-            "latency_ms": latency_ms
-        })
+        try:
+            if "gpt" in model:
+                mod = await client.client.moderations.create(input=full_prompt)
+                if mod.results[0].flagged:
+                    print(f"[BLOCKED] {path.name}")
+                    (output_dir / "blocked.log").open("a").write(f"{path.name}\n")
+                    return
 
-        async with lock:
-            stats["processed"] += 1
-            stats["succeeded"] += 1
-            if input_token: stats["sum_input_tokens"] += input_token
-            if cached_token: stats["sum_cached_tokens"] += cached_token
-            if output_token: stats["sum_output_tokens"] += output_token
-            if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
-            stats["sum_latency_ms"] += latency_ms
+            response, input_token, cached_token, output_token, reasoning_token = await client.generate_valid_json(prompt)
 
-    except Exception as e:
-        latency_ms = round((time.perf_counter() - t0) * 1000)
-        wandb.log({
-            "name": path.name,
-            "status": f"error:{type(e).__name__}",
-            "latency_ms": latency_ms
-        })
 
-        print(f"[ERROR] {path.name}: {type(e).__name__}: {e}")
+            latency_ms = round((time.perf_counter() - t0) * 1000)
 
-        async with lock:
-            stats["processed"] += 1
-            stats["failed"] += 1
-            stats["sum_latency_ms"] += latency_ms
+            output_path = output_dir/f"{path.name}"
+            output_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
+
+            wandb.log({
+                "name": path.name,
+                "status": "ok",
+                "input_tokens": input_token if input_token is not None else -1,
+                "cached_tokens": cached_token if cached_token is not None else -1,
+                "output_token": output_token if output_token is not None else -1,
+                "reasoning_token": reasoning_token if reasoning_token is not None else -1,
+                "latency_ms": latency_ms
+            })
+
+            async with lock:
+                stats["processed"] += 1
+                stats["succeeded"] += 1
+                if input_token: stats["sum_input_tokens"] += input_token
+                if cached_token: stats["sum_cached_tokens"] += cached_token
+                if output_token: stats["sum_output_tokens"] += output_token
+                if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
+                stats["sum_latency_ms"] += latency_ms
+
+        except Exception as e:
+            latency_ms = round((time.perf_counter() - t0) * 1000)
+            wandb.log({
+                "name": path.name,
+                "status": f"error:{type(e).__name__}",
+                "latency_ms": latency_ms
+            })
+
+            print(f"[ERROR] {path.name}: {type(e).__name__}: {e}")
+
+            async with lock:
+                stats["processed"] += 1
+                stats["failed"] += 1
+                stats["sum_latency_ms"] += latency_ms
 
 
 def main(args):
@@ -120,18 +130,19 @@ def main(args):
         raise ValueError(f"Unsupported model: {model}")
     if not api_key:
         raise RuntimeError(f"환경변수 {model.upper()}_API_KEY가 설정되지 않았습니다.")
-    
+
     input_dir = root_path / config["path"]["input_dir"]
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / config[model]["llm_params"]["model"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
     llm_params = config[model]["llm_params"]
     client = get_llm_client(model, api_key, **llm_params)
-    
+
     all_files = sorted(input_dir.glob("*.json"))
     files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
-    
-    run_name = f"{args.wandb_task}_{config[model]["llm_params"]["model"]}_{args.prompt}"
+    print(len([p for p in output_dir.glob("*.json")]))
+
+    run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
 
     run_id_path = root_path / config["path"]["wandb_run_id"] / f"{run_name}.txt"
     run_id_path.parent.mkdir(parents=True, exist_ok=True)
@@ -157,7 +168,7 @@ def main(args):
             "num_files": len(files),
             }
         )
-    
+
     if run.resumed:
         print(f"[W&B] Resumed existing run: {run.id}")
     else:
@@ -177,7 +188,7 @@ def main(args):
 
     FINALIZED = False
     EXIT_REASON = "completed"
-    
+
     def finalize(*, end_run):
         nonlocal FINALIZED, EXIT_REASON
         if FINALIZED:
@@ -186,7 +197,7 @@ def main(args):
 
         if wandb.run is None:
             return
-        
+
         elapsed_s = round(time.perf_counter() - t_run0, 3)
 
         wandb.summary["run_status"] = EXIT_REASON
@@ -219,12 +230,12 @@ def main(args):
 
     sem = asyncio.Semaphore(config["async"]["concurrency"])
     lock = asyncio.Lock()
-    
+
     async def sem_task(path):
         async with sem:
             await split_opinion(path, system_prompt, base_prompt, client, output_dir, model, stats, lock)
 
-    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]["llm_params"]["model"]}] Splitting Opinion ..."))
+    asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc=f"(Async) [{config[model]['llm_params']['model']}] Splitting Opinion ..."))
 
     EXIT_REASON = "completed"
     finalize(end_run=True)
