@@ -144,29 +144,26 @@
             "model": "solar-pro2",
             "reasoning_effort": "high",
             "temperature": 0.0,
-            "functions": [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "predict_subdecision",
-                        "description": "PTAB decision index as defined in Decision Type Dictionary",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "decision_type": {
-                                    "type": "string"
-                                },
-                                "decision_number": {
-                                    "type": "integer"
-                                }
+            "functions": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "predict_subdecision",
+                    "description": "PTAB decision index as defined in Decision Type Dictionary",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
+                                "type": "integer"
                             }
                         },
-                        "required": [
-                            "decision_type", "decision_number"
-                        ]
-                    }
+                        "required": ["decision_type", "decision_number"]
+                    } 
                 }
-            ],
+            },
             "function_call": {
                 "type": "function",
                 "function": {

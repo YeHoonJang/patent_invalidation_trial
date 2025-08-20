@@ -17,8 +17,8 @@ class SolarClient:
         self.model = model
         self.temperature = temperature
         self.reasoning_effort = reasoning_effort
-        self.tools = functions
-        self.tool_call = function_call
+        self.response_format = functions
+        self._schema = self.response_format["json_schema"]["schema"]
 
 
     async def _call(self, prompt):
@@ -31,8 +31,7 @@ class SolarClient:
                 ],
                 stream=False,
                 temperature=self.temperature,
-                tools=self.tools,
-                tool_choice=self.tool_call
+                response_format=self.response_format
             )
         elif self.model.endswith("pro2"):
             return await self.client.chat.completions.create(
@@ -44,21 +43,14 @@ class SolarClient:
                 reasoning_effort=self.reasoning_effort, # low, medium, high
                 stream=False,
                 temperature=self.temperature,
-                tools=self.tools,
-                tool_choice=self.tool_call
+                response_format=self.response_format
             )
 
 
     def validate_with_schema(self, result: dict):
-        target_name = self.tool_call["function"]["name"]
-        try:
-            schema = next(fn["function"]["parameters"] for fn in self.tools if fn["function"]["name"] == target_name)
-
-        except StopIteration:
-            raise ValueError(f"Function '{target_name}' not found in functions list")
-
-        ### 유효하지 않는 경우, ValidationError 발생
-        validate(instance=result, schema=schema)
+        if self._schema is None:
+            return result
+        validate(instance=result, schema=self._schema)
         return result
 
 
@@ -68,8 +60,7 @@ class SolarClient:
             try:
                 response = await self._call(prompt)
 
-                tool_calls = response.choices[0].message.tool_calls
-                result = tool_calls[0].function.arguments
+                result = response.choices[0].message.content
 
                 result_json = json.loads(result)
                 valid_result = self.validate_with_schema(result_json)
