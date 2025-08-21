@@ -1,6 +1,6 @@
 {
     "path": {
-        "root_path": "/home/chaewon/workspace/STUDY/PTAB",
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
@@ -209,36 +209,36 @@
     },
     "solar": {
         "llm_params": {
-            "model": "solar-pro2",
+            "model": "solar-pro2-250710",
             "reasoning_effort": "high",
             "temperature": 0.0,
-            "functions": [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "predict_issue_type",
-                        "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "issue_type": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
+            "functions": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "predict_subdecision",
+                    "description": "PTAB decision index as defined in Decision Type Dictionary",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "decision_type": {
+                                "type": "string"
+                            },
+                            "decision_number": {
+                                "type": "integer"
                             }
                         },
                         "required": [
-                            "issue_type"
+                            "decision_type",
+                            "decision_number"
                         ]
                     }
                 }
-            ],
+            },
             "function_call": {
                 "type": "function",
                 "function": {
-                    "name": "predict_issue_type"
+                    "name": "predict_subdecision"
                 }
             }
         }
