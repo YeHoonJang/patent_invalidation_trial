@@ -36,10 +36,15 @@ class ClaudeBatchClient:
             ),
         )
 
-    def _call(self, requests_files):
-        return self.client.messages.batches.create(
-            requests=requests_files
+    def _call(self, files):
+        res = self.client.messages.batches.create(
+            requests=files
         )
+        print(f"[Batch] created id={res.id}")
+        return res.id
+
+    def __call__(self, requests_files):
+        return self._call(requests_files)
 
     def validate_with_schema(self, result):
         try:
@@ -49,22 +54,19 @@ class ClaudeBatchClient:
 
         return result
 
-    def generate_valid_json(self, batch_input_files):
-        res = self._call(batch_input_files)
-        print(f"[Batch] created id={res.id}")
-
+    def generate_valid_json(self, r_id):
         while True:
-            batch = self.client.messages.batches.retrieve(res.id)
+            batch = self.client.messages.batches.retrieve(r_id)
 
             status = batch.processing_status
             if status == "ended":
                 break
 
             if status == "canceling":
-                raise RuntimeError(f"[Batch] {res.id} ended with status={status}")
+                raise RuntimeError(f"[Batch] {r_id} ended with status={status}")
             time.sleep(5)
 
-        raw = self.client.messages.batches.results(res.id)
+        raw = self.client.messages.batches.results(r_id)
 
         validated: Dict[str, dict] = {}
         dropped:   list[str] = []
