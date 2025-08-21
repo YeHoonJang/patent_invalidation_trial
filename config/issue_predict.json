@@ -193,6 +193,40 @@
             }
         }
     },
+    "gemini-batch": {
+        "llm_params": {
+            "model": "gemini-2.5-pro",
+            "temperature": 0.0,
+            "functions": {
+                "type": "OBJECT",
+                "properties": {
+                    "issue_type": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "STRING"
+                        }
+                    }
+                },
+                "required": [
+                    "issue_type"
+                ]
+            },
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "issue_type": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "issue_type"
+                ]
+            }
+        }
+    },
     "llama": {
         "llm_params": {
             "model": "meta-llama/Llama-3.1-8B-Instruct",

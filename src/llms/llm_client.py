@@ -3,6 +3,7 @@ from .gpt_batch_client import GPTBatchClient
 from .claude_client import ClaudeClient
 from .claude_batch_client import ClaudeBatchClient
 from .gemini_client import GeminiClient
+from .gemini_batch_client import GeminiBatchClient
 from .llama_client import LlamaClient
 from .qwen_client import QwenClient
 from .solar_client import SolarClient
@@ -40,7 +41,9 @@ def get_llm_batch_client(model_name, api_key, **kwargs):
 
     if "gpt" in name:
         return GPTBatchClient(api_key, **kwargs)
-    if "claude" in name:
+    elif "claude" in name:
         return ClaudeBatchClient(api_key, **kwargs)
+    elif "gemini" in name:
+        return GeminiBatchClient(api_key, **kwargs)
     else:
         raise ValueError(f"Unsupported model: {model_name}")

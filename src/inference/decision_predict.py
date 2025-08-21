@@ -57,6 +57,7 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
             lines.append(
                 client.make_request_line(prompt=prompt, custom_id=p.stem)
             )
+
         batch_path.write_text(
             "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
             encoding="utf-8"
@@ -67,6 +68,8 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
             batch_id = client(batch_path)
         elif "claude" in model:
             batch_id = client(lines)
+        elif "gemini" in model:
+            batch_id = client(batch_path)
 
     if not batch_id:
         raise RuntimeError(f"batch id가 확인되지 않았습니다.")
@@ -74,7 +77,9 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
     if "gpt" in model and not batch_id.startswith("batch_"):
         raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('batch_')}")
     elif "claude" in model and not batch_id.startswith("msgbatch_"):
-        raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('batch_')}")
+        raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('msgbatch_')}")
+    elif "gemini" in model and not batch_id.startswith("batches/"):
+        raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('batches')}")
 
     validated = client.generate_valid_json(batch_id)
 
@@ -257,6 +262,7 @@ def main(args):
 
     output_dir = root_path / config["path"]["output_dir"] / args.prompt / f"{config[model]['llm_params']['model']}"
     output_dir.mkdir(parents=True, exist_ok=True)
+
     llm_params = config[model]["llm_params"]
     mode = args.mode.lower()
     batch_id = args.batch_id
@@ -387,7 +393,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/decision_predict.json", help="Path of configuration file (e.g., decision_predict.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-batch", "gpt-o", "gpt-o-batch", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
+    parser.add_argument("--model", choices=["gpt", "gpt-batch", "gpt-o", "gpt-o-batch", "claude", "gemini", "gemini-batch", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for decision prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
     parser.add_argument("--wandb_entity", default="patent_project")
     parser.add_argument("--wandb_project", default="decision_predict")

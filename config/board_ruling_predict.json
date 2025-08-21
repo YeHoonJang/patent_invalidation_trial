@@ -1,6 +1,6 @@
 {
     "path": {
-        "root_path": "/home/yehoon/workspace/patent_invalidation_trial/",
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
@@ -178,6 +178,40 @@
             "model": "gemini-2.5-pro",
             "temperature": 0.0,
             "functions": {
+                "type": "object",
+                "properties": {
+                    "board_ruling": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "board_ruling"
+                ]
+            }
+        }
+    },
+    "gemini-batch": {
+        "llm_params": {
+            "model": "gemini-2.5-pro",
+            "temperature": 0.0,
+            "functions": {
+                "type": "OBJECT",
+                "properties": {
+                    "board_ruling": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "STRING"
+                        }
+                    }
+                },
+                "required": [
+                    "board_ruling"
+                ]
+            },
+            "schema": {
                 "type": "object",
                 "properties": {
                     "board_ruling": {
