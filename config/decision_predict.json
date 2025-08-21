@@ -1,12 +1,13 @@
 {
     "path": {
-        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
+        "root_path": "/home/chaewon/workspace/STUDY/PTAB",
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
         "log_dir": "log",
         "decision_type": "data/json/decision_type.json",
-        "wandb_run_id": "data/wandb_run_id"
+        "wandb_run_id": "data/wandb_run_id",
+        "batch_dir": "data/json/batch"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
@@ -38,13 +39,50 @@
                             }
                         },
                         "required": [
-                            "decision_type", "decision_number"
+                            "decision_type",
+                            "decision_number"
                         ]
                     }
                 }
             ],
             "function_call": {
                 "name": "predict_subdecision"
+            }
+        }
+    },
+    "gpt-batch": {
+        "llm_params": {
+            "model": "gpt-4o-2024-08-06",
+            "temperature": 0.0,
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "predict_subdecision",
+                        "description": "PTAB decision index as defined in Decision Type Dictionary",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "decision_type": {
+                                    "type": "string"
+                                },
+                                "decision_number": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "decision_type",
+                                "decision_number"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "predict_subdecision"
+                }
             }
         }
     },
@@ -67,13 +105,49 @@
                             }
                         },
                         "required": [
-                            "decision_type", "decision_number"
+                            "decision_type",
+                            "decision_number"
                         ]
                     }
                 }
             ],
             "function_call": {
                 "name": "predict_subdecision"
+            }
+        }
+    },
+    "gpt-o-batch": {
+        "llm_params": {
+            "model": "o3-2025-04-16",
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "predict_subdecision",
+                        "description": "PTAB decision index as defined in Decision Type Dictionary",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "decision_type": {
+                                    "type": "string"
+                                },
+                                "decision_number": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "decision_type",
+                                "decision_number"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "function_call": {
+                "type": "function",
+                "function": {
+                    "name": "predict_subdecision"
+                }
             }
         }
     },
@@ -98,7 +172,8 @@
                             }
                         },
                         "required": [
-                            "decision_type", "decision_number"
+                            "decision_type",
+                            "decision_number"
                         ]
                     }
                 }
@@ -120,7 +195,8 @@
                     }
                 },
                 "required": [
-                    "decision_type", "decision_number"
+                    "decision_type",
+                    "decision_number"
                 ]
             }
         }
@@ -160,8 +236,11 @@
                                 "type": "integer"
                             }
                         },
-                        "required": ["decision_type", "decision_number"]
-                    } 
+                        "required": [
+                            "decision_type",
+                            "decision_number"
+                        ]
+                    }
                 }
             },
             "function_call": {
