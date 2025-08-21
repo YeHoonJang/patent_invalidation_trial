@@ -21,65 +21,79 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from utils.config_utils import load_config
 from llms.llm_client import get_llm_client, get_llm_batch_client
 
-def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, client, stats) -> None:
-    lines = []
-    for p in files:
-        data   = json.loads(p.read_text(encoding="utf-8"))
-        appellant = data["appellant_arguments"]
-        examiner = data["examiner_findings"]
+def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, batch_path, client, model, stats, batch_id=None) -> None:
+    if not batch_id:
+        lines = []
+        for p in files:
+            data   = json.loads(p.read_text(encoding="utf-8"))
+            appellant = data["appellant_arguments"]
+            examiner = data["examiner_findings"]
 
-        if args.input_setting == "base":
-            full_prompt = base_prompt.format(
-                appellant=appellant,
-                examiner=examiner,
+            if args.input_setting == "base":
+                full_prompt = base_prompt.format(
+                    appellant=appellant,
+                    examiner=examiner,
+                )
+            elif args.input_setting == "merge":
+                arguments = []
+                arguments.extend(appellant)
+                arguments.extend(examiner)
+                full_prompt = base_prompt.format(
+                    arguments=arguments,
+                )
+            elif args.input_setting == "split-claim":
+                pass
+            elif args.input_setting == "claim-only":
+                pass
+
+            prompt = {
+                "system": system_prompt,
+                "user": full_prompt
+            }
+            lines.append(
+                client.make_request_line(prompt=prompt, custom_id=p.stem)
             )
-        elif args.input_setting == "merge":
-            arguments = []
-            arguments.extend(appellant)
-            arguments.extend(examiner)
-            full_prompt = base_prompt.format(
-                arguments=arguments,
-            )
-        elif args.input_setting == "split-claim":
-            pass
-        elif args.input_setting == "claim-only":
-            pass
-
-        prompt = {
-            "system": system_prompt,
-            "user": full_prompt
-        }
-
-        lines.append(
-            client.make_request_line(prompt=prompt, custom_id=p.stem)
+        batch_path.write_text(
+            "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
+            encoding="utf-8"
         )
+        print(f"Created batch file {batch_path.name} with {len(lines)} requests")
 
-    validated = client.generate_valid_json(lines)  # ↦ {custom_id: result}
+        if "gpt" in model:
+            batch_id = client(batch_path)
+        elif "claude" in model:
+            batch_id = client(lines)
 
-    for path in files:
-        json_result, input_token, cached_token, output_token, reasoning_token = None, None, None, None, None
-        v = validated.get(path.stem, "")
+    if not batch_id:
+        raise RuntimeError(f"batch id가 확인되지 않았습니다.")
 
-        if v:
-            json_result = v.get("result", "")
-            input_token = v.get("input_token", 0)
-            cached_token = v.get("cached_token", 0)
-            output_token = v.get("output_token", 0)
-            reasoning_token = v.get("reasoning_token", 0)
+    if "gpt" in model and not batch_id.startswith("batch_"):
+        raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('batch_')}")
+    elif "claude" in model and not batch_id.startswith("msgbatch_"):
+        raise RuntimeError(f"[check] model has {model}, but batch_id={batch_id} startswith_batch={(batch_id or '').startswith('batch_')}")
 
-            if json_result:
-                output_path = output_dir/f"{os.path.basename(path)}"
-                output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
+    validated = client.generate_valid_json(batch_id)
 
-                wandb.log({
-                    "name": path.name,
-                    "status": "ok" if json_result else "parse_fail",
-                    "input_tokens": input_token or -1,
-                    "cached_tokens": cached_token or -1,
-                    "output_token": output_token or -1,
-                    "reasoning_token": reasoning_token or -1,
-                    "latency_ms": 0
-                })
+    for filename, v in validated.items():
+        json_result = v.get("result", "")
+        input_token = v.get("input_token", 0)
+        cached_token = v.get("cached_token", 0)
+        output_token = v.get("output_token", 0)
+        reasoning_token = v.get("reasoning_token", 0)
+
+        if json_result:
+            output_path = output_dir/Path(filename).with_suffix(".json")
+            output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
+
+            wandb.log({
+                "name": filename,
+                "status": "ok" if json_result else "parse_fail",
+                "input_tokens": input_token or -1,
+                "cached_tokens": cached_token or -1,
+                "output_token": output_token or -1,
+                "reasoning_token": reasoning_token or -1,
+                "latency_ms": 0
+            })
 
         stats["processed"] += 1
         if json_result:
@@ -237,6 +251,13 @@ def main(args):
 
     llm_params = config[model]["llm_params"]
     mode = args.mode.lower()
+    batch_id = args.batch_id
+
+    if mode == "batch":
+        batch_dir = root_path / config["path"]["batch_dir"] / args.prompt
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        batch_path = batch_dir / config[model]["llm_params"]["model"]
+        batch_path = batch_path.with_suffix(".jsonl")
 
     ### Load Model
     if mode == "async":
@@ -348,7 +369,7 @@ def main(args):
         print(f"[Async] {config[model]['llm_params']['model']}_{args.input_setting}")
         asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Issue Type ..."))
     elif mode == "batch":
-        batch_process_file(files, system_prompt, base_prompt, output_dir, client, stats)
+        batch_process_file(files[:3], system_prompt, base_prompt, output_dir, batch_path, client, model, stats, batch_id)
 
     EXIT_REASON = "completed"
     finalize(end_run=True)
@@ -357,13 +378,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, required=False, default="config/issue_predict.json", help="Path of configuration file (e.g., issue_predict.json)")
-    parser.add_argument("--model", choices=["gpt", "gpt-o", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for issue type prediction")
+    parser.add_argument("--model", choices=["gpt", "gpt-batch", "gpt-o", "gpt-o-batch", "claude", "gemini", "llama", "qwen", "solar", "mistral", "deepseek", "t5"], required=False, default="gpt", help="LLM Model for issue type prediction")
     parser.add_argument("--prompt", type=str, required=True, default=None, help="Prompt for inferencing")
     parser.add_argument("--wandb_entity", default="patent_project")
     parser.add_argument("--wandb_project", default="issue_type_predict")
     parser.add_argument("--wandb_task", default="issue_type_predict")
     parser.add_argument("--input_setting", type=str, required=True, choices=["base", "merge", "split-claim", "claim-only"], default="base", help="Input setting")
-    parser.add_argument("--mode", choices=["async", "batch"], required=True, default="batch", help="Mode for Section Segmentation")
+    parser.add_argument("--mode", choices=["async", "batch"], required=True, default="asyncs", help="Mode for issue type prediction")
+    parser.add_argument("--batch_id", required=False, default=None, help="batch id")
 
     args = parser.parse_args()
 
