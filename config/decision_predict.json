@@ -218,7 +218,7 @@
     "solar": {
         "llm_params": {
             "model": "solar-pro2-250710",
-            "reasoning_effort": "medium",
+            "reasoning_effort": "high",
             "temperature": 0.0,
             "functions": {
                 "type": "json_schema",

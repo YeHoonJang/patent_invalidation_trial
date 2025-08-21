@@ -1,6 +1,6 @@
 {
     "path": {
-        "root_path": "/home/chaewon/workspace/STUDY/PTAB",
+        "root_path": "/home/yehoon/workspace/patent_invalidation_trial",
         "common_config": "config/common.json",
         "input_dir": "data/json/opinion_split/output/version_3/gemini-2.5-pro",
         "output_dir": "data/json/decision_predict/output",
@@ -212,20 +212,19 @@
             "model": "solar-pro2",
             "reasoning_effort": "high",
             "temperature": 0.0,
-            "functions": [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "predict_issue_type",
-                        "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "issue_type": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
+            "functions": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "predict_issue_type",
+                    "description": "PTAB issue index as defined in Issue-Type Index Dictionary",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "issue_type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
                                 }
                             }
                         },
@@ -234,7 +233,7 @@
                         ]
                     }
                 }
-            ],
+            },
             "function_call": {
                 "type": "function",
                 "function": {
