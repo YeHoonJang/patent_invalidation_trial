@@ -384,7 +384,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_project", default="issue_type_predict")
     parser.add_argument("--wandb_task", default="issue_type_predict")
     parser.add_argument("--input_setting", type=str, required=True, choices=["base", "merge", "split-claim", "claim-only"], default="base", help="Input setting")
-    parser.add_argument("--mode", choices=["async", "batch"], required=True, default="asyncs", help="Mode for issue type prediction")
+    parser.add_argument("--mode", choices=["async", "batch"], required=True, default="async", help="Mode for issue type prediction")
     parser.add_argument("--batch_id", required=False, default=None, help="batch id")
 
     args = parser.parse_args()
