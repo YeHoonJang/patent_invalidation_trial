@@ -201,6 +201,42 @@
             }
         }
     },
+    "gemini-batch": {
+        "llm_params": {
+            "model": "gemini-2.5-pro",
+            "temperature": 0.0,
+            "functions": {
+                "type": "OBJECT",
+                "properties": {
+                    "decision_type": {
+                        "type": "STRING"
+                    },
+                    "decision_number": {
+                        "type": "INTEGER"
+                    }
+                },
+                "required": [
+                    "decision_type",
+                    "decision_number"
+                ]
+            },
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "decision_type": {
+                        "type": "string"
+                    },
+                    "decision_number": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "decision_type",
+                    "decision_number"
+                ]
+            }
+        }
+    },
     "llama": {
         "llm_params": {
             "model": "meta-llama/Llama-3.1-8B-Instruct",
