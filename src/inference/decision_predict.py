@@ -1,7 +1,5 @@
 import argparse
 import asyncio
-import atexit
-import glob
 import json
 import os
 import sys
@@ -22,11 +20,19 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client, get_llm_batch_client
 
 
-def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, output_dir: Path, labels, batch_path, client, model, stats, batch_id=None) -> None:
+def batch_process_file(files, system_prompt, base_prompt, output_dir, labels, batch_path, uspto_path, client, model, stats, batch_id=None):
     if not batch_id:
         lines = []
+        skipped = 0
         for p in files:
-            data   = json.loads(p.read_text(encoding="utf-8"))
+            app_json = find_applicant_json(uspto_path, p.stem)
+            if app_json is None:
+                skipped += 1
+                continue
+            else:
+                app_patent = json.loads(app_json.read_text(encoding="utf-8"))
+            
+            data = json.loads(p.read_text(encoding="utf-8"))
 
             appellant = data["appellant_arguments"]
             examiner = data["examiner_findings"]
@@ -46,9 +52,12 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
                     decision_type=labels
                 )
             elif args.input_setting == "split-claim":
-                pass
-            elif args.input_setting == "claim-only":
-                pass
+                full_prompt = base_prompt.format(
+                    appellant=appellant,
+                    examiner=examiner,
+                    app_claims = app_patent["claims"],
+                    decision_type=labels,
+                )
 
             prompt = {
                 "system": system_prompt,
@@ -62,7 +71,7 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
             "\n".join(json.dumps(l, ensure_ascii=False) for l in lines) + "\n",
             encoding="utf-8"
         )
-        print(f"Created batch file {batch_path.name} with {len(lines)} requests")
+        print(f"Created batch file {batch_path.name} with {len(lines)} requests (skipped {skipped})")
 
         if "gpt" in model:
             batch_id = client(batch_path)
@@ -115,7 +124,9 @@ def batch_process_file(files: [Path], system_prompt: str, base_prompt: str, outp
         if reasoning_token: stats["sum_reasoning_tokens"] += reasoning_token
         stats["sum_latency_ms"] += 0
 
-async def predict_subdecision(args, path, system_prompt, base_prompt, client, labels, output_dir, model, stats, lock):
+
+async def predict_subdecision(args, path, system_prompt, base_prompt, app_patent, client, labels, output_dir, model, stats, lock):
+
     data = json.loads(path.read_text(encoding="utf-8"))
 
     appellant = data["appellant_arguments"]
@@ -131,14 +142,18 @@ async def predict_subdecision(args, path, system_prompt, base_prompt, client, la
         arguments = []
         arguments.extend(appellant)
         arguments.extend(examiner)
+
         full_prompt = base_prompt.format(
             arguments=arguments,
             decision_type=labels
         )
     elif args.input_setting == "split-claim":
-        pass
-    elif args.input_setting == "claim-only":
-        pass
+        full_prompt = base_prompt.format(
+            appellant=appellant,
+            examiner=examiner,
+            app_claims = app_patent["claims"],
+            decision_type=labels
+        )
 
     prompt = {
         "system": system_prompt,
@@ -183,7 +198,6 @@ async def predict_subdecision(args, path, system_prompt, base_prompt, client, la
             output_path = output_dir/f"{os.path.basename(path)}"
             output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
 
-
         wandb.log({
             "name": path.name,
             "status": "ok" if json_result else "parse_fail",
@@ -222,9 +236,16 @@ async def predict_subdecision(args, path, system_prompt, base_prompt, client, la
             stats["sum_latency_ms"] += latency_ms
 
 
+def find_applicant_json(uspto_root: Path, stem: str):
+    d = uspto_root / stem / "ApplicantPatent"
+    matches = list(d.glob("*.json"))
+    return matches[0] if matches else None
+
+
 def main(args):
     config = load_config(args.config)
     root_path = Path(config["path"]["root_path"])
+    uspto_path = root_path / config["path"]["uspto_dir"]
 
     labels_path = root_path / config["path"]["decision_type"]
     labels = json.loads(labels_path.read_text(encoding="utf-8")).keys()
@@ -377,13 +398,20 @@ def main(args):
         lock = asyncio.Lock()
 
         async def sem_task(path):
+            app_json = find_applicant_json(uspto_path, path.stem)
+            if app_json is None:
+                return
+            else:
+                app_patent = json.loads(app_json.read_text(encoding="utf-8"))
+
             async with sem:
-                await predict_subdecision(args, path, system_prompt, base_prompt, client, idx2labels, output_dir, model, stats, lock)
+                await predict_subdecision(args, path, system_prompt, base_prompt, app_patent, client, idx2labels, output_dir, model, stats, lock)
 
         print(f"[Async] {config[model]['llm_params']['model']}_{args.input_setting}")
         asyncio.run(tqdm_asyncio.gather(*[sem_task(p) for p in files], desc="Predict Subdecision ..."))
+    
     elif mode == "batch":
-        batch_process_file(files, system_prompt, base_prompt, output_dir, idx2labels, batch_path, client, model, stats, batch_id)
+        batch_process_file(files, system_prompt, base_prompt, output_dir, idx2labels, batch_path, uspto_path, client, model, stats, batch_id)
 
     EXIT_REASON = "completed"
     finalize(end_run=True)
