@@ -7,13 +7,15 @@
         "log_dir": "log",
         "issue_type": "data/json/issue_type.json",
         "wandb_run_id": "data/wandb_run_id",
-        "batch_dir": "data/json/batch"
+        "batch_dir": "data/json/batch",
+        "uspto_dir": "data/json/uspto"
     },
     "prompt": {
         "prompt_dir": "data/prompt/decision_predict",
         "system": "system.txt",
         "issue_type": "issue_type.txt",
-        "(merge)issue_type": "(merge)issue_type.txt"
+        "(merge)issue_type": "(merge)issue_type.txt",
+        "(claim)issue_type": "(claim)issue_type.txt"
     },
     "async": {
         "concurrency": 3
