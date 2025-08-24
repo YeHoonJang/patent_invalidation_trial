@@ -32,7 +32,7 @@ def batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path
             else:
                 app_patent = json.loads(app_json.read_text(encoding="utf-8"))
 
-            data   = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(p.read_text(encoding="utf-8"))
 
             appellant = data["appellant_arguments"]
             examiner = data["examiner_findings"]

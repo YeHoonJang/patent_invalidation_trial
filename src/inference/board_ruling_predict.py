@@ -20,7 +20,7 @@ from utils.config_utils import load_config
 from llms.llm_client import get_llm_client, get_llm_batch_client
 
 
-def batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path, client, model, stats, batch_id=None):
+def batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path, uspto_path, client, model, stats, batch_id=None):
     if not batch_id:
         lines = []
         skipped = 0
@@ -32,7 +32,7 @@ def batch_process_file(files, system_prompt, base_prompt, output_dir, batch_path
             else:
                 app_patent = json.loads(app_json.read_text(encoding="utf-8"))
 
-            data   = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(p.read_text(encoding="utf-8"))
 
             appellant = data["appellant_arguments"]
             examiner = data["examiner_findings"]
