@@ -157,10 +157,26 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     llm_params = config[model]["llm_params"]
-    client = get_llm_client(model, api_key, **llm_params)
-    
-    all_files = sorted(input_dir.glob("*.json"))
-    files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
+
+    mode = args.mode.lower()
+    batch_id = args.batch_id
+
+    if mode == "batch":
+        batch_dir = root_path / config["path"]["batch_dir"] / args.prompt
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        batch_path = batch_dir / config[model]["llm_params"]["model"]
+        batch_path = batch_path.with_suffix(".jsonl")
+
+    ### Load Model
+    if mode == "async":
+        client = get_llm_client(model, api_key, **llm_params)
+    elif mode == "batch":
+        client = get_llm_batch_client(model, api_key, **llm_params)
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
+
+    all_files = input_dir.glob("*.json")
+    files = [p for p in all_files if not (output_dir / f"{p.name}").exists()][:3000]
 
     run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
 

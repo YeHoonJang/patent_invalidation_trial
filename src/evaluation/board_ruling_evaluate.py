@@ -74,7 +74,7 @@ gt_df.rename(columns={"board_rulings": "board_rulings_true"}, inplace=True)
 
 
 def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dict | None:
-    out_dir = ROOT_PATH / DATA_PATH / "board_ruling" / model_path
+    out_dir = ROOT_PATH / DATA_PATH / input_setting / model_path
     files = sorted(out_dir.glob("*.json"))
     if not files:
         print(f"[INFO] {model_name}: no json files at {out_dir}")
@@ -146,7 +146,7 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
         "hamming_loss": hamming,
     }
 
-input_settings = ["board_rulings", "(merge)board_rulings"]
+input_settings = ["board_rulings", "(merge)board_rulings", "(claim)board_rulings"]
 for input_setting in input_settings:
     results = []
     for name, path in llm_dir.items():
