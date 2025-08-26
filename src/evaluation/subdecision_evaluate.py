@@ -18,7 +18,7 @@ llm_dir = {
     "claude" : Path("claude-sonnet-4-20250514"),
     "gemini_25_pro": Path("gemini-2.5-pro"),
     "gemini_15_pro": Path("gemini-1.5-pro"),
-    "gpt_4o": Path("gpt-4o"),
+    "gpt_4o": Path("gpt-4o-2024-08-06"),
     "gpt_o3": Path("o3-2025-04-16"),
     "solar": Path("solar-pro2"),
     "qwen": Path("Qwen/Qwen3-8B"),
@@ -108,7 +108,7 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
         "weighted_f1": weighted_f1,
     }
 
-input_settings = ["subdecision_type", "(merge)subdecision_type"]
+input_settings = ["subdecision_type", "(merge)subdecision_type", "(claim)subdecision_type"]
 for input_setting in input_settings:
     results = []
     for name, path in llm_dir.items():

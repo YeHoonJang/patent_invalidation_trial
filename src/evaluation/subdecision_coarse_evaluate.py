@@ -18,7 +18,7 @@ llm_dir = {
     "claude" : Path("claude-sonnet-4-20250514"),
     "gemini_25_pro": Path("gemini-2.5-pro"),
     "gemini_15_pro": Path("gemini-1.5-pro"),
-    "gpt_4o": Path("gpt-4o"),
+    "gpt_4o": Path("gpt-4o-2024-08-06"),
     "gpt_o3": Path("o3-2025-04-16"),
     "solar": Path("solar-pro2"),
     "qwen": Path("Qwen/Qwen3-8B"),
@@ -39,7 +39,7 @@ fine_l2i = {k: i for i, k in enumerate(fine_labels)}
 fine_sd_df["subdecision_coarse_true"] = fine_sd_df["subdecision_coarse"].map(fine_l2i)
 
 def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dict | None:
-    output_path = ROOT_PATH / DATA_PATH / "subdecision_type_coarse" / model_path
+    output_path = ROOT_PATH / DATA_PATH / input_setting / model_path
     files = sorted(output_path.glob("*.json"))
     if not files:
         print(f"[INFO] {model_name}: no json files at {output_path}")
@@ -107,7 +107,7 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
         "micro_f1": micro_f1,
         "weighted_f1": weighted_f1,
     }
-input_settings = ["subdecision_type_coarse", "(merge)subdecision_type_coarse"]
+input_settings = ["subdecision_type_coarse", "(merge)subdecision_type_coarse", "(claim)subdecision_type_coarse"]
 for input_setting in input_settings:
     results = []
     for name, path in llm_dir.items():

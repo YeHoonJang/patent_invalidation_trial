@@ -146,7 +146,7 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
         "hamming_loss": hamming,
     }
 
-input_settings = ["issue_type", "(merge)issue_type"]
+input_settings = ["issue_type", "(merge)issue_type", "(claim)issue_type"]
 for input_setting in input_settings:
     results = []
     for name, path in llm_dir.items():
