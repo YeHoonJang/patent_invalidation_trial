@@ -14,15 +14,15 @@ from sklearn.metrics import (
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-ROOT_PATH = Path("/home/yehoon/workspace/patent_invalidation_trial")
-DATA_PATH = Path("data/json/decision_predict/output")
+ROOT_PATH = Path("/home/work/patent/patent_invalidation_trial")
+DATA_PATH = Path("data/json/decision_predict/output_cw")
 true_df_path = Path("csv/20250818_ptab.csv")
 
 llm_dir = {
     "claude" : Path("claude-sonnet-4-20250514"),
     "gemini_25_pro": Path("gemini-2.5-pro"),
     "gemini_15_pro": Path("gemini-1.5-pro"),
-    "gpt_4o": Path("gpt-4o"),
+    "gpt_4o": Path("gpt-4o-2024-08-06"),
     "gpt_o3": Path("o3-2025-04-16"),
     "solar": Path("solar-pro2"),
     "qwen": Path("Qwen/Qwen3-8B"),
@@ -32,6 +32,8 @@ llm_dir = {
     "t5": Path("google/t5gemma-2b-2b-ul2-it"),
 }
 
+def normalize_list(x):
+    return [str(i).strip().lower() for i in to_list(x)]
 
 def to_list(x):
     if isinstance(x, list):
@@ -84,7 +86,10 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
     for p in files:
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
-            rows.append({"file_name": p.stem, "board_rulings_pred": data.get("board_ruling", [])})
+            rows.append({
+                "file_name": p.stem,
+                "board_rulings_pred": data.get("board_ruling", [])
+            })
         except Exception as e:
             print(f"[WARN] parse fail: {p.name}: {e}")
 
@@ -101,6 +106,9 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
 
     merged["board_rulings_true"] = merged["board_rulings_true"].apply(to_list)
     merged["board_rulings_pred"] = merged["board_rulings_pred"].apply(to_list)
+
+    merged["board_rulings_true"] = merged["board_rulings_true"].apply(normalize_list)
+    merged["board_rulings_pred"] = merged["board_rulings_pred"].apply(normalize_list)
 
     y_true, y_pred, labels = binarize_lists(
         merged["board_rulings_true"].tolist(),

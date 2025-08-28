@@ -14,15 +14,15 @@ from sklearn.metrics import (
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-ROOT_PATH = Path("/home/yehoon/workspace/patent_invalidation_trial")
-DATA_PATH = Path("data/json/decision_predict/output")
+ROOT_PATH = Path("/home/work/patent/patent_invalidation_trial")
+DATA_PATH = Path("data/json/decision_predict/output_cw")
 true_df_path = Path("csv/20250818_ptab.csv")
 
 llm_dir = {
     "claude" : Path("claude-sonnet-4-20250514"),
     "gemini_25_pro": Path("gemini-2.5-pro"),
     "gemini_15_pro": Path("gemini-1.5-pro"),
-    "gpt_4o": Path("gpt-4o"),
+    "gpt_4o": Path("gpt-4o-2024-08-06"),
     "gpt_o3": Path("o3-2025-04-16"),
     "solar": Path("solar-pro2"),
     "qwen": Path("Qwen/Qwen3-8B"),
