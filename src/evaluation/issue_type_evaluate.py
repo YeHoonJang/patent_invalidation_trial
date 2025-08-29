@@ -14,8 +14,8 @@ from sklearn.metrics import (
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-ROOT_PATH = Path("/home/work/patent/patent_invalidation_trial")
-DATA_PATH = Path("data/json/decision_predict/output_cw")
+ROOT_PATH = Path("/home/yehoon/workspace/patent_invalidation_trial")
+DATA_PATH = Path("data/json/decision_predict/output")
 true_df_path = Path("csv/20250818_ptab.csv")
 
 llm_dir = {

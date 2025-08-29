@@ -14,8 +14,8 @@ from sklearn.metrics import (
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-ROOT_PATH = Path("/home/work/patent/patent_invalidation_trial")
-DATA_PATH = Path("data/json/decision_predict/output_cw")
+ROOT_PATH = Path("/home/yehoon/workspace/patent_invalidation_trial")
+DATA_PATH = Path("data/json/decision_predict/output")
 true_df_path = Path("csv/20250818_ptab.csv")
 
 llm_dir = {
@@ -108,7 +108,7 @@ def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dic
         print(f"[INFO] {model_name}: merged is empty")
         return None
 
-    merged["board_rulings_true"] = merged["board_rulings_true"].apply(to_list)
+    merged["board_rulings_true"] = merged["board_rulings_true"].apply(to_list).apply(replace_empty_with_others)
     merged["board_rulings_pred"] = merged["board_rulings_pred"].apply(to_list)
 
     merged["board_rulings_true"] = merged["board_rulings_true"].apply(normalize_list)
