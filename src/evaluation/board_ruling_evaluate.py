@@ -75,6 +75,10 @@ gt_df = df_gt[["file_name", "board_rulings"]].copy()
 gt_df.rename(columns={"board_rulings": "board_rulings_true"}, inplace=True)
 
 
+def replace_empty_with_others(lst):
+    return lst if lst else ["Others"]
+
+
 def evaluate_model(input_setting: str, model_name: str, model_path: Path) -> dict | None:
     out_dir = ROOT_PATH / DATA_PATH / input_setting / model_path
     files = sorted(out_dir.glob("*.json"))
