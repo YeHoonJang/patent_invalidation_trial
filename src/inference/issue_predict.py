@@ -293,7 +293,7 @@ def main(args):
         raise ValueError(f"Unsupported mode: {mode}")
 
     all_files = input_dir.glob("*.json")
-    files = [p for p in all_files if not (output_dir / f"{p.name}").exists()]
+    files = [p for p in all_files if not (output_dir / f"{p.name}").exists()][:3000]
 
     run_name = f"{args.wandb_task}_{config[model]['llm_params']['model']}_{args.prompt}"
 

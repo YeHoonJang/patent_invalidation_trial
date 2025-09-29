@@ -198,6 +198,7 @@ async def predict_subdecision(args, path, system_prompt, base_prompt, app_patent
             output_path = output_dir/f"{os.path.basename(path)}"
             output_path.write_text(json.dumps(json_result, indent=2), encoding="utf-8")
 
+
         wandb.log({
             "name": path.name,
             "status": "ok" if json_result else "parse_fail",
