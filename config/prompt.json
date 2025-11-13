@@ -1,0 +1,11 @@
+{
+    "prompt_path": {
+        "base": {
+            "system": "data/prompt/decision_predict/system.txt",
+            "issue": "data/prompt/decision_predict/issue_type.txt",
+            "board": "data/prompt/decision_predict/board_ruling.txt",
+            "fine_sub": "data/prompt/decision_predict/subdecision_type.txt",
+            "coarse_sub": "data/prompt/decision_predict/subdecision_type_coarse.txt"
+        }
+    }
+}
